@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<!-- saved from url=(0063)https://storage.googleapis.com/bwg-track1-demo-guide/index.html -->
+<html lang="en" style="--accent: #ec4899; --accent-ink: #be185d; --accent-050: #fce7f3; --accent-border: #fbcfe8;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build With Gemini · Digital Demo Guide Console</title>
+<!--
+  Build With Gemini — Digital Demo Guide
+  Console Classic Variant: 3-column Cloud-Console layout (left step-nav / center content / right scoreboard & trophies).
+  Combines the Google-style UI and badge gamification system of index.html with the complete 7 Plays content from Google Docs / Markdown.
+  Self-contained: all CSS + JS inline. No backend/build/npm/libraries. Works via file:// and sandboxed iframe.
+  Vanilla JS + inline SVG + system fonts only.
+-->
+<style>
+:root {
+  /* Google-style accents */
+  --blue:#1a73e8; --blue-700:#1967d2; --blue-050:#e8f0fe; --blue-100:#d2e3fc;
+  --green:#34a853; --green-050:#e6f4ea; --green-100:#b7e1c2;
+  --yellow:#fbbc04; --yellow-050:#fef7e0; --yellow-100:#fde293;
+  --red:#ea4335; --red-050:#fce8e6; --red-100:#f6c7c2;
+  --purple:#7b2cbf; --purple-050:#f3e8fd;
+  --pink:#ec4899; --pink-050:#fce7f3; --pink-100:#fbcfe8;
+  --indigo:#6366f1; --indigo-050:#e0e7ff; --indigo-100:#c7d2fe;
+  --amber:#f59e0b; --amber-050:#fef3c7; --amber-100:#fde68a;
+  /* Neutrals (Google grey ramp) */
+  --bg:#f8f9fa; --surface:#ffffff; --surface-2:#f1f3f4;
+  --ink:#202124; --ink-2:#3c4043; --muted:#5f6368; --muted-2:#80868b;
+  --border:#dadce0; --border-2:#e8eaed;
+  /* Elevation */
+  --elev-1:0 1px 2px 0 rgba(60,64,67,.20),0 1px 3px 1px rgba(60,64,67,.08);
+  --elev-2:0 1px 3px 0 rgba(60,64,67,.20),0 4px 8px 3px rgba(60,64,67,.10);
+  --elev-3:0 4px 8px 0 rgba(60,64,67,.20),0 8px 20px 6px rgba(60,64,67,.12);
+  --radius:12px; --radius-sm:8px; --radius-lg:18px;
+  --font:'Google Sans','Product Sans',Roboto,system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+  --mono:'Roboto Mono',ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+  /* Per-play accent (set by JS on switch; defaults to P1 pink) */
+  --accent:#ec4899; --accent-ink:#be185d; --accent-050:#fce7f3; --accent-border:#fbcfe8;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font); background: var(--bg); color: var(--ink);
+  font-size: 15px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+h1,h2,h3,h4 { margin: 0; font-weight: 500; letter-spacing: -0.01em; }
+p { margin: 0 0 12px; }
+a { color: var(--accent); }
+svg { display: block; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* ---- Top bar ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 16px;
+  height: 60px; padding: 0 24px;
+  background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: var(--elev-1);
+}
+.brand { display: flex; align-items: center; gap: 11px; }
+.brand .logo { width: 30px; height: 30px; color: var(--accent); flex: 0 0 auto; }
+.brand .logo svg { width: 100%; height: 100%; }
+.brand .title { font-size: 16px; font-weight: 500; color: var(--ink); line-height: 1.1; }
+.brand .sub { font-size: 11.5px; color: var(--muted); letter-spacing: .02em; }
+.topbar .spacer { flex: 1; }
+.mission-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent-050); color: var(--accent-ink); border: 1px solid var(--accent-border);
+  padding: 6px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 500; white-space: nowrap;
+}
+.mission-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* ---- Play switcher (segmented tabs) ---- */
+.switcher { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 999px; padding: 3px; }
+.mtab {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--muted);
+  padding: 6px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px;
+  transition: background .15s ease, color .15s ease;
+}
+.mtab:hover { color: var(--ink-2); }
+.mtab .mt-ic { width: 14px; height: 14px; }
+.mtab.active { background: var(--surface); color: var(--accent-ink); box-shadow: var(--elev-1); }
+.mtab .mlock { width: 11px; height: 11px; opacity: .6; }
+
+/* ---- App grid ---- */
+.app {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr) 304px;
+  grid-template-areas: "nav main score";
+  gap: 22px; max-width: 1520px; margin: 0 auto; padding: 22px 24px 64px; align-items: start;
+}
+.rail-left  { grid-area: nav; position: sticky; top: 82px; display: flex; flex-direction: column; gap: 16px; }
+.rail-right { grid-area: score; position: sticky; top: 82px; display: flex; flex-direction: column; gap: 14px; }
+.main-col   { grid-area: main; min-width: 0; }
+.main       { min-width: 0; }
+
+/* ---- Instructions | Context view tabs ---- */
+.viewtabs {
+  display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 16px;
+  background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 999px;
+}
+.vtab {
+  appearance: none; border: 0; cursor: pointer; font: inherit;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 18px; border-radius: 999px; background: transparent;
+  font-size: 13.5px; font-weight: 600; color: var(--muted);
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.vtab .ic { width: 15px; height: 15px; display: inline-flex; }
+.vtab .ic svg { width: 100%; height: 100%; }
+.vtab:hover { color: var(--ink-2); }
+.vtab.active { background: var(--surface); color: var(--accent-ink); box-shadow: var(--elev-1); }
+.vtab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.no-motion .vtab { transition: none; }
+
+/* ---- Context document ---- */
+.ctxdoc .section { display: block; }
+.ctxdoc .sec-head { margin-bottom: 6px; }
+.ctx-note { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); margin: -4px 0 18px; }
+.ctx-note .ic { width: 16px; height: 16px; display: inline-flex; flex-shrink: 0; }
+.ctx-note svg { width: 16px; height: 16px; flex-shrink: 0; display: block; }
+.ctx-note .ic svg { width: 100%; height: 100%; }
+
+/* ---- Left nav: codelab stepper ---- */
+.nav-card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--elev-1); padding: 16px 14px; }
+.nav-head { padding: 2px 6px 12px; }
+.nav-head .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted-2); font-weight: 600; }
+.nav-head .h { font-size: 15px; font-weight: 500; color: var(--ink); margin-top: 2px; }
+.progress-wrap { padding: 4px 6px 14px; }
+.progress-row { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+.progress-track { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #ffffff)); border-radius: 99px; transition: width .6s cubic-bezier(.2,.7,.2,1); }
+
+.steps { list-style: none; margin: 0; padding: 4px 0 0; position: relative; }
+.step { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 9px 8px; border-radius: var(--radius-sm); cursor: pointer; user-select: none; transition: background .15s ease; }
+.step:hover { background: var(--surface-2); }
+.step.active { background: var(--accent-050); }
+.step:not(:last-child)::before { content: ""; position: absolute; left: 21px; top: 34px; bottom: -1px; width: 2px; background: var(--border-2); }
+.step.done:not(:last-child)::before { background: var(--green-100); }
+.step .marker { position: relative; z-index: 1; width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--surface); color: var(--muted); border: 2px solid var(--border); transition: all .2s ease; overflow: hidden; }
+.step.active .marker { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+.step.done .marker { background: var(--green); border-color: var(--green); color: #fff; }
+.step.done .marker .num { display: none; }
+.step .marker .check { display: none; width: 15px; height: 15px; }
+.step.done .marker .check { display: block; }
+.step.earned .marker { background: var(--surface); border-color: var(--yellow); color: #b06000; box-shadow: inset 0 0 0 2px var(--yellow-050); }
+.step.earned .marker .num, .step.earned .marker .check { display: none; }
+.step .marker .medal-ic { display: none; width: 15px; height: 15px; }
+.step.earned .marker .medal-ic { display: block; }
+.step .label { min-width: 0; display: flex; flex-direction: column; padding-top: 1px; }
+.step .label .t { display: block; font-size: 13.5px; color: var(--ink-2); font-weight: 500; line-height: 1.25; }
+.step.active .label .t { color: var(--accent-ink); }
+.step .label .s { display: block; font-size: 11px; color: var(--muted-2); margin-top: 1px; }
+
+/* ---- Left trophy shelf ---- */
+.trophy-card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--elev-1); padding: 13px 13px 14px; }
+.trophy-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.trophy-head h3 { font-size: 14px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.trophy-head h3 .ic { width: 17px; height: 17px; color: var(--yellow); }
+.trophy-head h3 .ic svg { width: 100%; height: 100%; }
+.badge-count { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.medal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.medallion { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 3px 6px; border: 1px solid var(--border-2); border-radius: var(--radius-sm); background: var(--surface-2); text-align: center; }
+.medallion .disc { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #e9eaed; color: var(--muted-2); border: 2px solid var(--border); transition: transform .25s ease; }
+.medallion .disc svg { width: 14px; height: 14px; }
+.medallion .mname { font-size: 8.5px; line-height: 1.15; color: var(--muted-2); font-weight: 600; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; align-self: stretch; }
+.medallion.earned { background: var(--yellow-050); border-color: var(--yellow-100); }
+.medallion.earned .disc { background: linear-gradient(150deg, #fddc78, #f6b73c); color: #7a4b00; border-color: #f6b73c; box-shadow: 0 2px 8px rgba(246,183,60,.4); }
+.medallion.earned .mname { color: #8a5300; }
+.medallion.pop .disc { animation: medalPop .55s cubic-bezier(.2,1.4,.4,1); }
+@keyframes medalPop { 0%{transform:scale(.4);} 60%{transform:scale(1.18);} 100%{transform:scale(1);} }
+.medallion .shine { position: absolute; inset: 0; border-radius: var(--radius-sm); overflow: hidden; pointer-events: none; }
+.medallion.pop .shine::after { content:""; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(105deg, transparent, rgba(255,255,255,.75), transparent); transform: skewX(-18deg); animation: shineSweep .7s ease .05s; }
+@keyframes shineSweep { from{left:-60%;} to{left:130%;} }
+
+/* ---- Section wrapper + entrance ---- */
+.section { display: none; }
+.section.is-active { display: block; }
+.no-motion .section.is-active { animation: none !important; }
+.section.is-active { animation: sectionIn .4s cubic-bezier(.2,.7,.2,1); }
+@keyframes sectionIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.section.is-active { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--elev-1); padding: 32px 40px 22px; }
+.section .prose { max-width: none; }
+
+.play-intro-banner { margin-bottom: 24px; padding-bottom: 22px; border-bottom: 1px solid var(--border-2); }
+.play-intro-title { display: inline-flex; align-items: center; font-size: 12.5px; font-weight: 600; color: var(--accent-ink); background: var(--accent-050); border: 1px solid var(--accent-border); padding: 4px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.02em; }
+.play-intro-howto { font-size: 24px; font-weight: 600; color: var(--ink); margin: 0 0 10px; letter-spacing: -0.02em; }
+.play-intro-lede { font-size: 15.5px; line-height: 1.65; color: var(--ink-2); margin: 0 0 14px; }
+.play-intro-scenario { font-size: 15.5px; line-height: 1.65; color: var(--ink-2); margin: 0; }
+.play-intro-scenario strong { color: var(--ink); font-weight: 600; }
+.sec-head { margin-bottom: 18px; }
+.sec-head .eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--accent-ink); background: var(--accent-050); border: 1px solid var(--accent-border); padding: 4px 11px; border-radius: 999px; }
+.sec-head .eyebrow.crisis { color: #b3261e; background: var(--red-050); border-color: var(--red-100); }
+.sec-head .eyebrow.success { color: #137333; background: var(--green-050); border-color: var(--green-100); }
+.sec-head h2 { font-size: 27px; margin-top: 12px; color: var(--ink); font-weight: 500; letter-spacing: -0.02em; }
+.sec-head .lede { font-size: 15.5px; color: var(--muted); max-width: 68ch; margin-top: 8px; }
+
+/* ---- Generic card ---- */
+.card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--elev-1); padding: 22px 24px; margin-bottom: 18px; }
+.card > h3 { font-size: 17px; color: var(--ink); margin-bottom: 4px; display: flex; align-items: center; gap: 9px; }
+.card > h3 .ic { width: 20px; height: 20px; color: var(--accent); flex: 0 0 auto; }
+.card > h3 .ic svg { width: 100%; height: 100%; }
+.card .card-sub { color: var(--muted); font-size: 13.5px; margin-bottom: 14px; }
+.card p { color: var(--ink-2); }
+.card p:last-child { margin-bottom: 0; }
+.lead-quote { font-size: 15.5px; color: var(--ink-2); font-style: italic; border-left: 3px solid var(--accent); background: var(--accent-050); padding: 12px 16px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 0 0 12px; }
+
+/* ---- Prose: rendered-markdown flow ---- */
+.prose { color: var(--ink-2); font-size: 15px; line-height: 1.65; margin: 0 0 20px; max-width: 74ch; }
+.prose > :first-child { margin-top: 0; }
+.prose > :last-child { margin-bottom: 0; }
+.prose h3 { font-size: 17px; font-weight: 600; color: var(--ink); margin: 28px 0 8px; letter-spacing: -.01em; }
+.prose h4 { font-size: 14.5px; font-weight: 600; color: var(--ink); margin: 18px 0 6px; }
+.prose p { margin: 0 0 13px; }
+.prose ul, .prose ol { margin: 0 0 13px; padding-left: 22px; }
+.prose li { margin: 0 0 7px; }
+.prose li::marker { color: var(--muted-2); }
+.prose strong { color: var(--ink); font-weight: 600; }
+.prose em { font-style: italic; }
+.prose a { color: var(--accent); }
+.prose blockquote { margin: 4px 0 16px; padding: 11px 16px; border-left: 3px solid var(--border); background: var(--surface-2); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--ink-2); font-style: italic; }
+.prose blockquote p { margin: 0; }
+.prose code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+.grid-2 .card { margin-bottom: 0; }
+
+/* ---- Concept / gap tiles ---- */
+.concept { border-top: 4px solid var(--blue); }
+.concept.tone-blue { border-top-color: var(--blue); }
+.concept.tone-green { border-top-color: var(--green); }
+.concept.tone-red { border-top-color: var(--red); }
+.concept.tone-yellow { border-top-color: var(--yellow); }
+.concept .tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--blue-700); }
+.concept.tone-green .tag { color: #137333; }
+.concept.tone-red .tag { color: #b3261e; }
+.concept.tone-yellow .tag { color: #8a5300; }
+.concept h4 { font-size: 18px; margin: 8px 0 8px; }
+.concept .kv { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+
+/* ---- Callouts ---- */
+.callout { border-radius: var(--radius); padding: 16px 18px; display: flex; gap: 13px; align-items: flex-start; margin-bottom: 18px; border: 1px solid; }
+.callout .ic { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 1px; }
+.callout .ic svg { width: 100%; height: 100%; }
+.callout.warn { background: var(--yellow-050); border-color: var(--yellow-100); }
+.callout.warn .ic { color: #b06000; }
+.callout.warn strong { color: #8a5300; }
+.callout.info { background: var(--blue-050); border-color: var(--blue-100); }
+.callout.info .ic { color: var(--blue-700); }
+.callout.good { background: var(--green-050); border-color: var(--green-100); }
+.callout.good .ic { color: var(--green); }
+.callout .body { font-size: 14px; color: var(--ink-2); }
+.callout .body strong { color: var(--ink); }
+
+/* ---- Prompt cards ---- */
+.prompts-wrap { display: flex; flex-direction: column; gap: 12px; }
+.prompt-card { position: relative; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 13px 52px 14px 16px; transition: box-shadow .15s ease, border-color .15s ease; margin-bottom: 14px; }
+.prompt-card:hover { border-color: #c7cbd1; box-shadow: var(--elev-1); }
+.prompt-meta { display: flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-2); margin-bottom: 6px; }
+.prompt-meta .ag { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-ink); }
+.prompt-meta .ag svg { width: 13px; height: 13px; }
+.prompt-text { font-family: var(--mono); font-size: 13px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+.prompt-text::before { content: "\201C"; color: var(--muted-2); }
+.prompt-text::after  { content: "\201D"; color: var(--muted-2); }
+.copy-btn { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--muted); transition: all .15s ease; }
+.copy-btn:hover { color: var(--accent); border-color: var(--accent-border); background: var(--accent-050); }
+.copy-btn:active { transform: scale(.92); }
+.copy-btn svg { width: 17px; height: 17px; }
+.copy-btn .ok { display: none; color: var(--green); }
+.copy-btn.copied { color: var(--green); border-color: var(--green-100); background: var(--green-050); }
+.copy-btn.copied .cp { display: none; }
+.copy-btn.copied .ok { display: block; }
+
+/* ---- Interactive Prompt Parameters ---- */
+.prompt-params-bar {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin: 6px 0 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.ppb-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-ink);
+}
+.ppb-head .ppb-ic {
+  display: inline-flex;
+}
+.ppb-head .ppb-ic svg {
+  width: 14px; height: 14px;
+}
+.ppb-head .ppb-sub {
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: auto;
+  font-size: 11px;
+}
+.ppb-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ppb-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ppb-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  min-width: 120px;
+}
+.ppb-input {
+  flex: 1;
+  min-width: 220px;
+  padding: 6px 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  transition: all .15s ease;
+}
+.ppb-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-050);
+}
+.ppb-input::placeholder {
+  color: var(--muted-2);
+  font-family: var(--font);
+}
+.prompt-param {
+  background: var(--accent-050);
+  color: var(--accent-ink);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  border: 1px dashed var(--accent-border);
+  transition: all .15s ease;
+}
+.prompt-param.filled {
+  background: #e6f4ea;
+  color: #137333;
+  border-style: solid;
+  border-color: #34a853;
+}
+
+.prompt-lead { border: 1px solid var(--accent-border); background: linear-gradient(180deg, var(--accent-050), var(--surface)); border-radius: var(--radius); padding: 4px; margin-bottom: 18px; box-shadow: var(--elev-1); }
+.prompt-lead .lead-label { font-size: 11.5px; font-weight: 600; color: var(--accent-ink); padding: 10px 14px 4px; display: flex; align-items: center; gap: 7px; }
+.prompt-lead .lead-label svg { width: 15px; height: 15px; }
+.prompt-lead .prompt-card { background: var(--surface); border: none; }
+.prompt-lead.warn { border-color: var(--yellow-100); background: linear-gradient(180deg, #fffaf0, var(--surface)); }
+.prompt-lead.warn .lead-label { color: #8a5300; }
+
+/* ---- Data tables (Cloud Logging style) ---- */
+.table-wrap table { width: max-content; min-width: 100%; }
+.table-wrap { border: 1px solid var(--border-2); border-radius: var(--radius); overflow-x: auto; overflow-y: hidden; box-shadow: var(--elev-1); background: var(--surface); margin-bottom: 18px; }
+.table-bar { display: flex; align-items: center; gap: 9px; padding: 11px 16px; background: var(--surface); border-bottom: 1px solid var(--border-2); font-size: 12.5px; color: var(--muted); }
+.table-bar .ic { width: 16px; height: 16px; color: var(--muted); flex: 0 0 auto; }
+.table-bar .ic svg { width: 100%; height: 100%; }
+.table-bar b { color: var(--ink-2); font-weight: 600; }
+.table-scroll { overflow-x: auto; }
+table.log { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.log th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-2); font-weight: 600; padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border-2); white-space: normal; text-wrap: balance; }
+table.log td { padding: 10px 14px; border-bottom: 1px solid var(--border-2); color: var(--ink-2); vertical-align: middle; }
+table.log tr:last-child td { border-bottom: none; }
+table.log tbody tr:hover { background: #fafbfc; }
+table.log .mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+table.log tr.flag td { background: var(--red-050); }
+table.log tr.deny td { background: var(--red-050); }
+table.log tr.ok-row td { background: var(--green-050); }
+
+/* ---- Chips ---- */
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.chip svg { width: 12px; height: 12px; }
+.chip.red { background: var(--red-050); color: #b3261e; }
+.chip.green { background: var(--green-050); color: #137333; }
+.chip.yellow { background: var(--yellow-050); color: #8a5300; }
+.chip.grey { background: var(--surface-2); color: var(--muted); }
+.chip.blue { background: var(--blue-050); color: var(--blue-700); }
+
+/* ---- Verify checklist ---- */
+.checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.checklist li { display: flex; gap: 11px; align-items: flex-start; font-size: 14px; color: var(--ink-2); }
+.checklist .cbox { width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; flex: 0 0 auto; }
+.checklist .cbox svg { width: 14px; height: 14px; }
+
+/* ---- Decisions ---- */
+.decision { display: flex; gap: 15px; padding: 16px 0; border-bottom: 1px solid var(--border-2); }
+.decision:first-child { padding-top: 0; }
+.decision:last-child { border-bottom: none; padding-bottom: 0; }
+.decision .n { width: 30px; height: 30px; flex: 0 0 auto; border-radius: 50%; background: var(--accent-050); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.decision h4 { font-size: 15px; margin-bottom: 3px; }
+.decision p { font-size: 13.5px; color: var(--muted); margin: 0; }
+
+/* ---- Celebration (check-burst) ---- */
+.celebrate { position: relative; display: grid; place-items: center; padding: 22px 0 6px; }
+.burst { position: relative; width: 96px; height: 96px; display: grid; place-items: center; }
+.burst .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--green); opacity: 0; }
+.is-active .burst .ring { animation: ring 1.4s cubic-bezier(.2,.7,.2,1) forwards; }
+.is-active .burst .ring.r2 { animation-delay: .18s; }
+.is-active .burst .ring.r3 { animation-delay: .36s; }
+@keyframes ring { 0% { transform: scale(.4); opacity: .55; } 70% { opacity: .12; } 100% { transform: scale(2.1); opacity: 0; } }
+.burst .core { width: 76px; height: 76px; border-radius: 50%; background: var(--green); display: grid; place-items: center; color: #fff; box-shadow: 0 8px 24px rgba(52,168,83,.4); transform: scale(0); }
+.is-active .burst .core { animation: pop .6s cubic-bezier(.2,1.3,.4,1) .1s forwards; }
+@keyframes pop { to { transform: scale(1); } }
+.burst .core svg { width: 40px; height: 40px; }
+.celebrate .ctitle { font-size: 22px; font-weight: 500; color: var(--ink); margin-top: 16px; opacity: 0; }
+.celebrate .csub { font-size: 14px; color: var(--muted); margin-top: 4px; opacity: 0; max-width: 52ch; }
+.is-active .celebrate .ctitle { animation: fadeUp .5s ease .5s forwards; }
+.is-active .celebrate .csub { animation: fadeUp .5s ease .66s forwards; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.no-motion .burst .core { transform: scale(1); }
+.no-motion .celebrate .ctitle, .no-motion .celebrate .csub { opacity: 1; animation: none; }
+.no-motion .burst .ring { display: none; }
+
+/* ---- Right rail: scoreboard ---- */
+.score-card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius); box-shadow: var(--elev-1); padding: 18px; }
+.score-card h3 { font-size: 14px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.score-card h3 .ic { width: 17px; height: 17px; color: var(--accent); }
+.score-card h3 .ic svg { width: 100%; height: 100%; }
+.score-status { font-size: 12px; color: var(--muted); margin: 8px 0 16px; padding: 8px 11px; border-radius: var(--radius-sm); background: var(--surface-2); border-left: 3px solid var(--accent); transition: all .3s ease; }
+.score-status.crisis { background: var(--red-050); border-left-color: var(--red); color: #b3261e; }
+.score-status.win { background: var(--green-050); border-left-color: var(--green); color: #137333; }
+.axis { margin-bottom: 15px; }
+.axis:last-child { margin-bottom: 0; }
+.axis-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.axis-ic { width: 18px; height: 18px; flex: 0 0 auto; }
+.axis-ic svg { width: 100%; height: 100%; }
+.axis-name { font-size: 12.5px; font-weight: 500; color: var(--ink-2); flex: 1; }
+.axis-val { font-size: 12.5px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.axis-track { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.axis-fill { height: 100%; width: 0%; border-radius: 99px; transition: width .9s cubic-bezier(.2,.7,.2,1), background-color .5s ease; }
+.no-motion .axis-fill { transition: none; }
+.axis.security .axis-ic { color: var(--blue); }
+.axis.trust    .axis-ic { color: var(--red); }
+.axis.budget   .axis-ic { color: var(--green); }
+.axis.performance .axis-ic { color: var(--yellow); }
+.axis.happiness .axis-ic { color: var(--purple); }
+.legend { font-size: 11px; color: var(--muted-2); margin-top: 14px; line-height: 1.5; border-top: 1px solid var(--border-2); padding-top: 12px; }
+
+/* ---- Right rail: lab trophies ---- */
+.lab-card .trophy-head h3 .ic { color: var(--yellow); }
+.module-trophy { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-2); background: var(--surface-2); margin-bottom: 11px; }
+.module-trophy .mt-disc { width: 36px; height: 36px; flex: 0 0 auto; border-radius: 10px; display: grid; place-items: center; background: #e9eaed; color: var(--muted-2); border: 2px solid var(--border); }
+.module-trophy .mt-disc svg { width: 18px; height: 18px; }
+.module-trophy.earned .mt-disc { background: linear-gradient(150deg, #fddc78, #f6b73c); color: #7a4b00; border-color: #f6b73c; box-shadow: 0 3px 10px rgba(246,183,60,.45); }
+.module-trophy .mt-meta .mt-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.module-trophy .mt-meta .mt-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.module-trophy.earned .mt-meta .mt-sub { color: #137333; }
+
+.lab-shelf { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
+.lab-tile { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 3px 8px; border: 1px solid var(--border-2); border-radius: var(--radius-sm); background: var(--surface-2); text-align: center; }
+.lab-tile .lt-disc { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: #e9eaed; color: var(--muted-2); border: 2px solid var(--border); filter: grayscale(1); }
+.lab-tile .lt-disc svg { width: 16px; height: 16px; }
+.lab-tile .lt-code { font-size: 10px; font-weight: 700; color: var(--muted-2); }
+.lab-tile .lt-lock { position: absolute; top: 5px; right: 5px; width: 12px; height: 12px; color: var(--muted-2); }
+.lab-tile.unlockable .lt-disc { filter: none; background: var(--accent-050); color: var(--accent-ink); border-color: var(--accent-border); }
+.lab-tile.unlockable .lt-code { color: var(--accent-ink); }
+.lab-tile.earned .lt-disc { filter: none; background: linear-gradient(150deg, #fddc78, #f6b73c); color: #7a4b00; border-color: #f6b73c; box-shadow: 0 2px 8px rgba(246,183,60,.4); }
+.lab-tile.earned .lt-code { color: #8a5300; }
+
+.grand-badge { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-radius: var(--radius-sm); border: 1px dashed var(--border); background: var(--surface); }
+.grand-badge .gb-disc { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; background: #eceef1; color: var(--muted-2); border: 2px solid var(--border); }
+.grand-badge .gb-disc svg { width: 19px; height: 19px; }
+.grand-badge.earned .gb-disc { background: linear-gradient(150deg, #fddc78, #f6b73c); color: #7a4b00; border-color: #f6b73c; }
+.grand-badge .gb-name { font-size: 12.5px; font-weight: 700; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+.grand-badge .gb-name .lk { width: 12px; height: 12px; color: var(--muted-2); }
+.grand-badge .gb-blurb { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ---- Footer nav (Back / Next / Restart) ---- */
+.main-footer { display: flex; align-items: center; gap: 14px; margin-top: 8px; padding-top: 4px; }
+.btn { font-family: var(--font); font-size: 14px; font-weight: 500; padding: 10px 20px; border-radius: 999px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; transition: all .15s ease; }
+.btn:hover { background: var(--surface-2); box-shadow: var(--elev-1); }
+.btn svg { width: 16px; height: 16px; }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-ink); box-shadow: var(--elev-2); }
+.btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+.main-footer .fspacer { flex: 1; }
+.footer-count { font-size: 12.5px; color: var(--muted); }
+
+/* ---- Copy toast ---- */
+.toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px); background: #202124; color: #fff; font-size: 13.5px; font-weight: 500; padding: 12px 20px; border-radius: 10px; box-shadow: var(--elev-3); display: flex; align-items: center; gap: 9px; opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease; z-index: 90; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast .tic { width: 17px; height: 17px; color: #81c995; }
+.toast .tic svg { width: 100%; height: 100%; }
+.no-motion .toast { transition: opacity .01s; }
+
+/* ---- Badge-unlock pop card (top-center) ---- */
+.badge-pop { position: fixed; top: 74px; left: 50%; transform: translateX(-50%) translateY(-16px) scale(.96); z-index: 95; display: flex; align-items: center; gap: 13px; background: var(--surface); border: 1px solid var(--yellow-100); border-left: 4px solid var(--yellow); border-radius: var(--radius); box-shadow: var(--elev-3); padding: 13px 18px 13px 15px; min-width: 280px; max-width: 380px; opacity: 0; pointer-events: none; transition: opacity .3s ease, transform .35s cubic-bezier(.2,1.3,.4,1); }
+.badge-pop.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+.badge-pop .bp-disc { width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(150deg, #fddc78, #f6b73c); color: #7a4b00; border: 2px solid #f6b73c; box-shadow: 0 3px 10px rgba(246,183,60,.5); position: relative; overflow: hidden; }
+.badge-pop .bp-disc svg { width: 24px; height: 24px; }
+.badge-pop.show .bp-disc { animation: medalPop .6s cubic-bezier(.2,1.4,.4,1); }
+.badge-pop .bp-disc::after { content:""; position:absolute; top:0; left:-60%; width:45%; height:100%; background: linear-gradient(105deg, transparent, rgba(255,255,255,.8), transparent); transform: skewX(-18deg); }
+.badge-pop.show .bp-disc::after { animation: shineSweep .8s ease .1s; }
+.badge-pop .bp-meta { min-width: 0; }
+.badge-pop .bp-kick { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #b06000; display: flex; align-items: center; gap: 6px; }
+.badge-pop .bp-kick svg { width: 12px; height: 12px; }
+.badge-pop .bp-name { font-size: 15px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+.badge-pop .bp-cheer { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.badge-pop.module { border-color: var(--green-100); border-left-color: var(--green); }
+.badge-pop.module .bp-kick { color: #137333; }
+.no-motion .badge-pop { transition: opacity .12s ease; }
+.no-motion .badge-pop.show .bp-disc, .no-motion .badge-pop.show .bp-disc::after, .no-motion .medallion.pop .disc, .no-motion .medallion.pop .shine::after { animation: none; }
+
+/* ---- Responsive ---- */
+@media (max-width: 1200px) {
+  .app { grid-template-columns: 224px minmax(0,1fr) 268px; gap: 16px; }
+  .medal-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1024px) {
+  .app { grid-template-columns: 1fr; grid-template-areas: "nav" "score" "main"; }
+  .rail-left, .rail-right { position: static; }
+  .steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; }
+  .step:not(:last-child)::before { display: none; }
+  .switcher { flex-wrap: wrap; }
+  .topbar { flex-wrap: wrap; height: auto; padding: 10px 16px; }
+}
+@media (max-width: 680px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .lab-shelf { grid-template-columns: repeat(3, 1fr); }
+  .steps { grid-template-columns: 1fr; }
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
+
+.prose .module-subtitle { font-size: 12.5px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted); margin: -2px 0 14px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg></span>
+    <div>
+      <div class="title">Build With Gemini</div>
+      <div class="sub">数字演示指南 · 高管控制台与徽章系统</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="switcher" id="switcher" role="tablist" aria-label="Play switcher"><button class="mtab active" type="button" role="tab" data-mcode="P1" title="P1 · 破冰" aria-selected="true"><span class="mt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.9-.2 2.7-.6.7-.4 1.1-1.2 1-2-.1-.7-.6-1.3-1.3-1.4-.7-.1-1.3-.7-1.4-1.4 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4-3.6-7.1-10-7.1z"></path></svg></span>P1</button><button class="mtab" type="button" role="tab" data-mcode="P2" title="P2 · 使用 Google 智能体让您的工作更轻松"><span class="mt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg></span>P2</button><button class="mtab" type="button" role="tab" data-mcode="P3" title="P3 · 工作流智能体"><span class="mt-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path></svg></span>P3</button><button class="mtab" type="button" role="tab" data-mcode="P4" title="P4 · M&amp;A War Room"><span class="mt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg></span>P4</button><button class="mtab" type="button" role="tab" data-mcode="P5" title="P5 · 危机笔记本"><span class="mt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg></span>P5</button><button class="mtab" type="button" role="tab" data-mcode="P6" title="P6 · 预测性营收"><span class="mt-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg></span>P6</button><button class="mtab" type="button" role="tab" data-mcode="P7" title="P7 · 智能体社会影响力顾问"><span class="mt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg></span>P7</button></div>
+  <span class="mission-chip" id="missionChip"><span class="dot"></span> P1 · 破冰</span>
+</header>
+
+<div class="app">
+  <aside class="rail-left">
+    <nav class="nav-card" aria-label="Play steps">
+      <div class="nav-head">
+        <div class="kicker" id="navKicker">Play P1</div>
+        <div class="h" id="navSub">黑色星期五仪表盘 · 视觉素材</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-row"><span>进度</span><span id="progressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width: 0%;"></div></div>
+      </div>
+      <ul class="steps" id="steps"><li class="step active earned" data-idx="0" role="button" tabindex="0" aria-label="步骤 1 · 访问网站并生成摘要" aria-current="step"><span class="marker"><span class="num">0</span><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span class="medal-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg></span></span><span class="label"><span class="t">步骤 1 · 访问网站并生成摘要</span><span class="s"></span></span></li><li class="step" data-idx="1" role="button" tabindex="0" aria-label="步骤 2 · 社交媒体宣传图"><span class="marker"><span class="num">1</span><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span class="medal-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.9-.2 2.7-.6.7-.4 1.1-1.2 1-2-.1-.7-.6-1.3-1.3-1.4-.7-.1-1.3-.7-1.4-1.4 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4-3.6-7.1-10-7.1z"></path></svg></span></span><span class="label"><span class="t">步骤 2 · 社交媒体宣传图</span><span class="s"></span></span></li><li class="step" data-idx="2" role="button" tabindex="0" aria-label="步骤 3 · 信息图仪表盘"><span class="marker"><span class="num">2</span><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span class="medal-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg></span></span><span class="label"><span class="t">步骤 3 · 信息图仪表盘</span><span class="s"></span></span></li><li class="step" data-idx="3" role="button" tabindex="0" aria-label="步骤 4 · 您构建了什么"><span class="marker"><span class="num">3</span><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span class="medal-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M9 20h6M10 16h4v4h-4z"></path></svg></span></span><span class="label"><span class="t">步骤 4 · 您构建了什么</span><span class="s"></span></span></li></ul>
+    </nav>
+  </aside>
+
+  <div class="main-col">
+    <div class="viewtabs" id="viewtabs" role="tablist" aria-label="Play view">
+      <button class="vtab active" type="button" role="tab" id="vtabInstructions" aria-selected="true" aria-controls="main" data-view="instructions"><span class="ic" aria-hidden="true" id="vtabIcoI"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></span> Instructions</button>
+      <button class="vtab" type="button" role="tab" id="vtabContext" aria-selected="false" aria-controls="ctxMain" data-view="context"><span class="ic" aria-hidden="true" id="vtabIcoC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10c.7.7 1 1.3 1 2h6c0-.7.3-1.3 1-2a6 6 0 00-4-10z"></path></svg></span> Context</button>
+    </div>
+    <main class="main" id="main" role="tabpanel" aria-labelledby="vtabInstructions"><section class="section is-active" data-sec="0" aria-label="步骤 1 · 访问网站并生成摘要"><div class="play-intro-banner"><div class="play-intro-title">Play 1：破冰</div><p class="play-intro-scenario"><strong>场景说明：</strong> 在第一个 Play 中，您将了解 Gemini Enterprise 如何访问实时网站、提取关键业务上下文，并将这些基础信息转化为出色的营销视觉素材。</p></div><div class="sec-head"><h2>步骤 1 · 访问网站并生成摘要</h2><p class="lede">让我们首先使用实时网页工具，将 Gemini Enterprise 与您的真实业务网站进行关联（Grounding）。</p></div><div class="prose"><ol><li>在浏览器中打开 Gemini Enterprise。</li><li>在聊天框中复制并粘贴以下提示词，将 <strong>[ENTER YOUR WEBSITE HERE]</strong> 替换为您的公司网站 URL，然后按回车键（ENTER）。</li></ol></div><div class="prompt-card"><div class="prompt-meta"><span class="ag"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg> Play 提示词</span> · 复制并粘贴到 Gemini</div><div class="prompt-params-bar"><div class="ppb-head"><span class="ppb-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg></span><span class="ppb-title">自定义提示词参数</span><span class="ppb-sub">您的输入会自动更新下方的提示词</span></div><div class="ppb-fields"><div class="ppb-field"><label class="ppb-label">网站 URL：</label><input type="text" class="ppb-input" data-target="[ENTER YOUR WEBSITE URL HERE]" placeholder="e.g. https://www.cymbal.com" autocomplete="off" aria-label="Website URL"></div></div></div><div class="prompt-text">Use your live web tools to visit this business's website
+
+<span class="prompt-param" data-ph="[ENTER YOUR WEBSITE URL HERE]">[ENTER YOUR WEBSITE URL HERE]</span>
+
+and write a detailed summary of the business.</div><button class="copy-btn" type="button" aria-label="Copy prompt to clipboard"><span class="cp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg></span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></button></div><div class="prose"><p>预期结果：Gemini 会访问您的实时网址，解析产品、使命和价值主张，并生成结构化的企业摘要。</p></div><div class="main-footer"><button class="btn" type="button" data-back="" disabled=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg> Back</button><div class="fspacer"></div><span class="footer-count">Step 1 of 4</span><button class="btn primary" type="button" data-next="">Next: 步骤 2 · 社交媒体宣传图 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button></div></section><section class="section" data-sec="1" aria-label="步骤 2 · 社交媒体宣传图"><div class="sec-head"><span class="eyebrow">P1 · 破冰</span><h2>步骤 2 · 社交媒体宣传图</h2><p class="lede">将您刚刚提取的网站基础信息转化为高转化率的视觉素材。</p></div><div class="prose"><ol start="3"><li>在聊天栏中，选择 <strong>Tools</strong> 图标，然后选择 <strong>Create images.</strong></li><li>复制并粘贴以下提示词，然后按回车键。</li></ol></div><div class="prompt-card"><div class="prompt-meta"><span class="ag"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg> Play 提示词</span> · 复制并粘贴到 Gemini</div><div class="prompt-text">Now, use this exact business description to create a social media advertising graphic.</div><button class="copy-btn" type="button" aria-label="Copy prompt to clipboard"><span class="cp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg></span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></button></div><div class="prose"><ol start="5"><li>回顾与检查：生成的图片是否准确反映了您网站上的业务描述？注意观察其视觉美学和信息传递是否与品牌形象保持一致。</li></ol></div><div class="main-footer"><button class="btn" type="button" data-back=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg> Back</button><div class="fspacer"></div><span class="footer-count">Step 2 of 4</span><button class="btn primary" type="button" data-next="">Next: 步骤 3 · 信息图仪表盘 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button></div></section><section class="section" data-sec="2" aria-label="步骤 3 · 信息图仪表盘"><div class="sec-head"><span class="eyebrow">P1 · 破冰</span><h2>步骤 3 · 信息图仪表盘（可选）</h2><p class="lede">尝试使用自定义信息图仪表盘，将高关注度的零售 KPI 可视化。</p></div><div class="prose"><p>如果您有更多时间，可以继续探索图像生成和自定义指挥中心图形。</p><ol start="6"><li>Click <strong>New chat</strong> （在侧边栏中）以创建新的上下文。</li><li>在聊天栏中，选择 <strong>Tools</strong> 图标，然后选择 <strong>Create images</strong>.</li><li>在聊天框中复制并粘贴以下提示词，并将以“Visual &amp; Aesthetic Style”开头的风格部分修改为您喜欢的任何风格，准备好后按回车键提交。</li></ol></div><div class="prompt-card"><div class="prompt-meta"><span class="ag"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg> Play 提示词</span> · 复制并粘贴到 Gemini</div><div class="prompt-text">Generate a corporate dashboard infographic image.
+
+Visual &amp; Aesthetic Style:
+Ultra-modern real-time command center, dark background, glowing data visualizations in electric blue, emerald green, and white.
+
+Data &amp; Content Requirements:
+Main Title: "BLACK FRIDAY POWER PLAY"
+Global KPI: "$50M GLOBAL SALES TARGET"
+Metric Grid: A 2x2 layout featuring four key metrics with relevant minimalist icons:
+IN-STORE EXPERIENCE (98% Positive)
+DIGITAL CONVERSION (+40% Add-to-Cart)
+LOGISTICS (&lt;2 HR CLICK &amp; COLLECT)
+SOCIAL REACH (80M IMPRESSIONS)</div><button class="copy-btn" type="button" aria-label="Copy prompt to clipboard"><span class="cp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg></span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></button></div><div class="prose"><p>预期结果：生成一张惊艳的 2x2 信息图仪表盘，包含数据图表、清晰的排版和高管级 KPI。</p></div><div class="main-footer"><button class="btn" type="button" data-back=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg> Back</button><div class="fspacer"></div><span class="footer-count">Step 3 of 4</span><button class="btn primary" type="button" data-next="">Next: 步骤 4 · 您构建了什么 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button></div></section><section class="section" data-sec="3" aria-label="步骤 4 · 您构建了什么"><div class="sec-head"><span class="eyebrow success">P1 · 破冰</span><h2>步骤 4 · 您构建了什么</h2><p class="lede">您已在几秒钟内将 Gemini 接入实时网页数据，并生成了品牌化的视觉素材。</p></div><div class="card" style="text-align:center;"><div class="celebrate"><div class="burst"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></div><div class="ctitle">破冰完成！</div><div class="csub">您已完成 Play 1 并解锁了首批高管徽章。</div></div></div><div class="prose"><p>在不到五分钟的时间内，您完成了：</p><ul><li>从实时网站 URL 中提取了实时的企业级基础信息（Grounding）。</li><li>创建了符合品牌形象的定制化社交媒体广告素材。</li><li>设计了超现代的“黑色星期五 KPI 指挥中心”信息图。</li></ul><p>接下来，让我们进入 <strong>Play 2 · 使用 Google 智能体让您的工作更轻松</strong>，届时您将使用 BigQuery 智能体、多路 CCTV 视频流和 Canvas 来执行企业合规审计。</p></div><div class="main-footer"><button class="btn" type="button" data-back=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg> Back</button><div class="fspacer"></div><span class="footer-count">Step 4 of 4</span><button class="btn" type="button" data-restart="">Restart P1 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"></path><path d="M3 4v4h4"></path></svg></button><button class="btn primary" type="button" data-goto="P2">Next: P2 · 使用 Google 智能体让您的工作更轻松 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button></div></section></main>
+    <div class="ctxdoc" id="ctxMain" role="tabpanel" aria-labelledby="vtabContext" hidden=""><div class="ctx-note"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10c.7.7 1 1.3 1 2h6c0-.7.3-1.3 1-2a6 6 0 00-4-10z"></path></svg></span><span>Play P1 的深入背景、架构与高管核心要点。</span></div><section class="section is-active" style="margin-bottom:18px;"><div class="sec-head"><h2>Play 1 · 破冰 — 背景与架构解析</h2></div><div class="prose"><p>本“Context”标签页提供了以下 Play 背后的架构、业务价值和最佳实践的深入背景： <strong>Play 1：破冰</strong>.</p></div></section><section class="section is-active" style="margin-bottom:18px;"><div class="sec-head"><h2>为什么实时网站 Grounding 很重要</h2></div><div class="prose"><p>大语言模型（LLM）存在训练数据截止日期。当您要求未接入实时数据的 LLM 总结您的业务时，它只能依赖历史网页快照或通用假设。通过指示 Gemini Enterprise 使用其 <strong>live web tools</strong>，您可以让模型实时查看您当前的主页、产品目录和品牌信息。</p><h3>高管核心要点</h3><ul><li><strong>零幻觉品牌塑造：</strong> Grounding 确保后续的营销文案和视觉提示词都基于您真实的公司事实。</li><li><strong>快速生成素材：</strong> 无需向代理商提交需求并等待数周，您可以在三分钟内完成从网站 URL 到广告图形的转化。</li></ul></div></section><section class="section is-active" style="margin-bottom:18px;"><div class="sec-head"><h2>图像生成与品牌视觉</h2></div><div class="prose"><p>在步骤 2 和步骤 3 中，您使用了 Gemini 内置的图像生成功能。请注意，提供结构化的描述（例如排版、配色方案和指标网格布局）如何将普通的图像输出转化为极具影响力的企业级信息图。</p></div></section></div>
+  </div>
+
+  <aside class="rail-right">
+    <div class="trophy-card">
+      <div class="trophy-head">
+        <h3><span class="ic" aria-hidden="true" id="trophyIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M9 20h6M10 16h4v4h-4z"></path></svg></span> 奖杯架</h3>
+        <span class="badge-count" id="badgeCount">Badges 1 / 4</span>
+      </div>
+      <div class="medal-grid" id="medalGrid"><div class="medallion earned pop" data-idx="0" title="Website Grounded"><span class="shine"></span><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg></span><span class="mname">Website Grounded</span></div><div class="medallion" data-idx="1" title="Social Ad Creator"><span class="shine"></span><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.9-.2 2.7-.6.7-.4 1.1-1.2 1-2-.1-.7-.6-1.3-1.3-1.4-.7-.1-1.3-.7-1.4-1.4 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4-3.6-7.1-10-7.1z"></path></svg></span><span class="mname">Social Ad Creator</span></div><div class="medallion" data-idx="2" title="Infographic Architect"><span class="shine"></span><span class="disc"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg></span><span class="mname">Infographic Architect</span></div><div class="medallion" data-idx="3" title="P1 — 破冰完成"><span class="shine"></span><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M9 20h6M10 16h4v4h-4z"></path></svg></span><span class="mname">P1 — 破冰完成</span></div></div>
+    </div>
+
+    <div class="trophy-card lab-card">
+      <div class="trophy-head"><h3><span class="ic" aria-hidden="true" id="labIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M9 20h6M10 16h4v4h-4z"></path></svg></span> Play 奖杯</h3></div>
+      <div class="module-trophy" id="moduleTrophy"><div class="mt-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M9 20h6M10 16h4v4h-4z"></path></svg></div><div class="mt-meta"><div class="mt-name">P1 — 破冰</div><div class="mt-sub" data-modsub="">进行中</div></div></div>
+      <div class="lab-shelf" id="labShelf"><div class="lab-tile unlockable" data-mcode="P1"><span class="lt-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.9-.2 2.7-.6.7-.4 1.1-1.2 1-2-.1-.7-.6-1.3-1.3-1.4-.7-.1-1.3-.7-1.4-1.4 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4-3.6-7.1-10-7.1z"></path></svg></span><span class="lt-code">P1</span></div><div class="lab-tile unlockable" data-mcode="P2"><span class="lt-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg></span><span class="lt-code">P2</span></div><div class="lab-tile unlockable" data-mcode="P3"><span class="lt-disc"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path></svg></span><span class="lt-code">P3</span></div><div class="lab-tile unlockable" data-mcode="P4"><span class="lt-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg></span><span class="lt-code">P4</span></div><div class="lab-tile unlockable" data-mcode="P5"><span class="lt-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg></span><span class="lt-code">P5</span></div><div class="lab-tile unlockable" data-mcode="P6"><span class="lt-disc"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"></path></svg></span><span class="lt-code">P6</span></div><div class="lab-tile unlockable" data-mcode="P7"><span class="lt-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg></span><span class="lt-code">P7</span></div></div>
+      <div class="grand-badge" id="grandBadge"><div class="gb-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M9 20h6M10 16h4v4h-4z"></path></svg></div><div><div class="gb-name">AI 高管冠军 <span class="lk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg></span></div><div class="gb-blurb">完成全部 7 个 Play，掌握 Build With Gemini 与 AI 领导力。</div></div></div>
+    </div>
+
+    <div class="score-card" id="scoreCard">
+      <h3><span class="ic" aria-hidden="true" id="scoreIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span> 高管 AI 影响力</h3>
+      <div class="score-status" id="scoreStatus">P1 Step 1 · Website grounded in real-time.</div>
+      <div id="axes"><div class="axis security"><div class="axis-top"><span class="axis-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 3v6c0 4.4-3 8.5-7 9-4-.5-7-4.6-7-9V5l7-3z"></path><path d="M9.5 12l1.8 1.8L15 10"></path></svg></span><span class="axis-name">Security</span><span class="axis-val" data-val="security">20</span></div><div class="axis-track"><div class="axis-fill" data-fill="security" style="width: 20%; background: rgb(234, 67, 53);"></div></div></div><div class="axis trust"><div class="axis-top"><span class="axis-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21C7 17 3 13.6 3 9.5 3 6.9 5 5 7.5 5 9.1 5 10.5 5.8 12 7.5 13.5 5.8 14.9 5 16.5 5 19 5 21 6.9 21 9.5 21 13.6 17 17 12 21Z"></path></svg></span><span class="axis-name">Trust</span><span class="axis-val" data-val="trust">30</span></div><div class="axis-track"><div class="axis-fill" data-fill="trust" style="width: 30%; background: rgb(234, 67, 53);"></div></div></div><div class="axis budget"><div class="axis-top"><span class="axis-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M16 7.5C16 6 14.2 5 12 5S8 6 8 7.8s1.8 2.5 4 2.9 4 1.2 4 3.1S14.2 19 12 19s-4-1-4-2.6"></path></svg></span><span class="axis-name">Budget</span><span class="axis-val" data-val="budget">40</span></div><div class="axis-track"><div class="axis-fill" data-fill="budget" style="width: 40%; background: rgb(234, 67, 53);"></div></div></div><div class="axis performance"><div class="axis-top"><span class="axis-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path></svg></span><span class="axis-name">Performance</span><span class="axis-val" data-val="performance">50</span></div><div class="axis-track"><div class="axis-fill" data-fill="performance" style="width: 50%; background: rgb(251, 188, 4);"></div></div></div><div class="axis happiness"><div class="axis-top"><span class="axis-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"></path><path d="M9 9.5h.01M15 9.5h.01"></path></svg></span><span class="axis-name">User Happiness</span><span class="axis-val" data-val="happiness">60</span></div><div class="axis-track"><div class="axis-fill" data-fill="happiness" style="width: 60%; background: rgb(251, 188, 4);"></div></div></div></div>
+      <div class="legend">评分反映企业 AI 领导力就绪度、治理水平、洞察速度以及工作流自动化成熟度。</div>
+    </div>
+  </aside>
+</div>
+
+<div class="badge-pop" id="badgePop" role="status" aria-live="polite"><div class="bp-disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg></div><div class="bp-meta"><div class="bp-kick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"></circle><path d="M12 12v6M9.5 15h5M8 3l4 6 4-6"></path></svg> 徽章已解锁</div><div class="bp-name">Website Grounded</div><div class="bp-cheer">Step 1 · Detailed summary extracted — done.</div></div></div>
+<div class="toast" id="toast"><span class="tic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span> <span id="toastText">已复制到剪贴板</span></div>
+
+<script>
+"use strict";
+/* ---------- Shared inline icon set ---------- */
+var ICONS = {
+  spark:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.8L21 11l-6.4 2.2L12 20l-2.6-6.8L3 11l6.4-2.2L12 2Z"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6z"/></svg>',
+  grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+  shadow:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 00-7-7zm-3 18h6v1a1 1 0 01-1 1h-4a1 1 0 01-1-1z"/></svg>',
+  database:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7 3 3 4.6 3 6.5v11C3 19.4 7 21 12 21s9-1.6 9-3.5v-11C21 4.6 17 3 12 3zm7 14.5c0 .6-2.8 1.5-7 1.5s-7-.9-7-1.5V9c1.7.9 4.4 1.5 7 1.5s5.3-.6 7-1.5z"/></svg>',
+  link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l-5 5 5 5M10 7l5 5-5 5"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>',
+  rows:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3l9-16z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 3v6c0 4.4-3 8.5-7 9-4-.5-7-4.6-7-9V5l7-3z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>',
+  id:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M13 9h5M13 13h5M6 16c.8-1.3 4.2-1.3 5 0"/></svg>',
+  scale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M7 7l-3 6h6l-3-6zM17 7l-3 6h6l-3-6zM8 20h8"/></svg>',
+  wrench:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 01-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 015.4-5.4l-2.6 2.6-2-2 2.6-2.6z"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+  trophy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M9 20h6M10 16h4v4h-4z"/></svg>',
+  medal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v6M9.5 15h5M8 3l4 6 4-6"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>',
+  arrowR:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  arrowL:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 4v4h4"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21C7 17 3 13.6 3 9.5 3 6.9 5 5 7.5 5 9.1 5 10.5 5.8 12 7.5 13.5 5.8 14.9 5 16.5 5 19 5 21 6.9 21 9.5 21 13.6 17 17 12 21Z"/></svg>',
+  coin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M16 7.5C16 6 14.2 5 12 5S8 6 8 7.8s1.8 2.5 4 2.9 4 1.2 4 3.1S14.2 19 12 19s-4-1-4-2.6"/></svg>',
+  smile:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>',
+  gift:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4"/><path d="M5 12v9h14v-9M12 8v13M12 8S10 3 7.5 4.5 12 8 12 8zM12 8s2-5 4.5-3.5S12 8 12 8z"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>',
+  compass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6 6-2z"/></svg>',
+  bulb:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10c.7.7 1 1.3 1 2h6c0-.7.3-1.3 1-2a6 6 0 00-4-10z"/></svg>',
+  slack:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 11-2-2h2v2zm1 0a2 2 0 014 0v5a2 2 0 01-4 0v-5zM9 6a2 2 0 11-2 2V6h2zm0 1a2 2 0 010 4H4a2 2 0 010-4h5zm9 2a2 2 0 112 2h-2V9zm-1 0a2 2 0 01-4 0V4a2 2 0 014 0v5zm-2 9a2 2 0 11-2-2h2v2zm0-1a2 2 0 010-4h5a2 2 0 010 4h-5z"/></svg>',
+  palette:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.9-.2 2.7-.6.7-.4 1.1-1.2 1-2-.1-.7-.6-1.3-1.3-1.4-.7-.1-1.3-.7-1.4-1.4 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4-3.6-7.1-10-7.1z"/></svg>',
+  flight:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>',
+  voice:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>'
+};
+function ico(k){ return ICONS[k] || ""; }
+
+/* ---------- Per-play accent palettes ---------- */
+var ACCENTS = {
+  P1:{main:"#ec4899",ink:"#be185d",soft:"#fce7f3",border:"#fbcfe8"},
+  P2:{main:"#1a73e8",ink:"#1967d2",soft:"#e8f0fe",border:"#d2e3fc"},
+  P3:{main:"#f59e0b",ink:"#b45309",soft:"#fef3c7",border:"#fde68a"},
+  P4:{main:"#ea4335",ink:"#c5221f",soft:"#fce8e6",border:"#f6c7c2"},
+  P5:{main:"#34a853",ink:"#137333",soft:"#e6f4ea",border:"#b7e1c2"},
+  P6:{main:"#8b5cf6",ink:"#6d28d9",soft:"#ede9fe",border:"#ddd6fe"},
+  P7:{main:"#6366f1",ink:"#4338ca",soft:"#e0e7ff",border:"#c7d2fe"}
+};
+
+/* ---------- Lab-level trophy data ---------- */
+var LAB = {
+  missions:[
+    { code:"P1", name:"Ice Breaker",              icon:"palette", accent:"--pink" },
+    { code:"P2", name:"使用 Google 智能体让您的工作更轻松",            icon:"search",  accent:"--blue" },
+    { code:"P3", name:"工作流智能体",           icon:"bolt",    accent:"--amber" },
+    { code:"P4", name:"并购作战室",             icon:"flag",    accent:"--red" },
+    { code:"P5", name:"危机笔记本",          icon:"voice",   accent:"--green" },
+    { code:"P6", name:"预测性营收",       icon:"spark",   accent:"--purple" },
+    { code:"P7", name:"智能体社会影响力顾问",    icon:"flight",  accent:"--indigo" }
+  ],
+  grand:{ icon:"trophy", name:"AI 高管冠军", blurb:"Complete all 7 Plays to master Build With Gemini & AI Leadership." }
+};
+
+/* ---------- PLAYS (MISSIONS) ---------- */
+var MISSIONS = {
+  P1:{
+    code:"P1", name:"Ice Breaker", sub:"黑色星期五仪表盘 · 视觉素材", env:"prod · gemini-enterprise", accentVar:"--pink",
+    steps:[],
+    badges:{
+      steps:{
+        0:{icon:"search",name:"Website Grounded",cheer:"Step 1 · Detailed summary extracted — done."},
+        1:{icon:"palette",name:"Social Ad Creator",cheer:"Step 2 · Advertising graphic generated — done."},
+        2:{icon:"spark",name:"Infographic Architect",cheer:"Step 3 · Dashboard visualized — done."},
+        3:{icon:"trophy",name:"P1 — 破冰完成",cheer:"Play 1 Ice Breaker — cleared!"}
+      },
+      module:{icon:"trophy",name:"P1 — 破冰",cheer:"Ice Breaker — cleared."}
+    }
+  },
+  P2:{
+    code:"P2", name:"使用 Google 智能体让您的工作更轻松", sub:"使用 Google 智能体让您的工作更轻松 · BigQuery · CCTV Multistream · Canvas", env:"prod · gemini-enterprise", accentVar:"--blue",
+    steps:[],
+    badges:{
+      steps:{
+        0:{icon:"database",name:"Data Detective",cheer:"Step 1 · Enterprise incident log outliers queried — done."},
+        1:{icon:"search",name:"CCTV Targeted",cheer:"Step 2 · High-severity cameras identified — done."},
+        2:{icon:"shield",name:"Video Analyst",cheer:"Step 3 · Multistream CCTV video analyzed — done."},
+        3:{icon:"rows",name:"Canvas Executive",cheer:"Step 4 · Formal compliance audit report compiled — done."},
+        4:{icon:"trophy",name:"P2 — 使用 Google 智能体让您的工作更轻松已完成",cheer:"Play 2 使用 Google 智能体让您的工作更轻松 — cleared!"}
+      },
+      module:{icon:"trophy",name:"P2 — 使用 Google 智能体让您的工作更轻松",cheer:"使用 Google 智能体让您的工作更轻松 — cleared."}
+    }
+  },
+  P3:{
+    code:"P3", name:"工作流智能体", sub:"Supply Chain Fix · HITL Automation", env:"prod · agent-platform", accentVar:"--amber",
+    steps:[],
+    badges:{
+      steps:{
+        0:{icon:"bolt",name:"Supply Chain Architect",cheer:"Step 1 · Workflow automation prompt initialized — done."},
+        1:{icon:"id",name:"HITL Controller",cheer:"Step 2 · Schedule trigger & human-in-the-loop configured — done."},
+        2:{icon:"check",name:"Agent Publisher",cheer:"Step 3 · Agent executed, approved & deployed — done."},
+        3:{icon:"trophy",name:"P3 — 工作流智能体已完成",cheer:"Play 3 工作流智能体 — cleared!"}
+      },
+      module:{icon:"trophy",name:"P3 — 工作流智能体",cheer:"工作流智能体 — cleared."}
+    }
+  },
+  P4:{
+    code:"P4", name:"并购作战室", sub:"Multilingual Translation · Risk Matrix · Canvas PPTX · Plan B", env:"prod · gemini-enterprise", accentVar:"--red",
+    steps:[],
+    badges:{
+      steps:{
+        0:{icon:"search",name:"Multilingual Translator",cheer:"Step 1 · Japanese Q2 report translated & compliance cross-referenced — done."},
+        1:{icon:"rows",name:"Risk Matrix Builder",cheer:"Step 2 · Cross-border Risk Matrix table visualized — done."},
+        2:{icon:"rows",name:"Board PPTX Creator",cheer:"Step 3 · 4-slide Board PPTX presentation generated in Canvas — done."},
+        3:{icon:"coin",name:"Deal Restructurer",cheer:"Step 4 · Plan B financials & Japanese etiquette strategy ready — done."},
+        4:{icon:"trophy",name:"P4 — 并购作战室已完成",cheer:"Play 4 全球并购作战室 — cleared!"}
+      },
+      module:{icon:"trophy",name:"P4 — 并购作战室",cheer:"全球并购作战室 — cleared."}
+    }
+  },
+  P5:{
+    code:"P5", name:"危机笔记本", sub:"30-Min Executive Prep · Notebook · Audio", env:"prod · notebooklm-studio", accentVar:"--green",
+    steps:[],
+    badges:{
+      steps:{
+        0:{icon:"rows",name:"Chief of Staff",cheer:"Step 1 · 1-Page executive brief synthesized — done."},
+        1:{icon:"scale",name:"Logistics Comparer",cheer:"Step 2 · Multi-regional logistics compared — done."},
+        2:{icon:"shield",name:"Objection Neutralizer",cheer:"Step 3 · COO objections neutralized — done."},
+        3:{icon:"voice",name:"Interactive Podcast Pro",cheer:"Step 4 · Notebook Studio & interactive audio explored — done."},
+        4:{icon:"trophy",name:"P5 — 危机笔记本已完成",cheer:"Play 5 危机笔记本 (High Stakes Advisory) — cleared!"}
+      },
+      module:{icon:"trophy",name:"P5 — 危机笔记本",cheer:"危机笔记本 — cleared."}
+    }
+  },
+  P6:{
+    code:"P6", name:"预测性营收", sub:"Python Code Execution · 6-Month Forecast", env:"prod · data-science-studio", accentVar:"--purple",
+    steps:[],
+    badges:{
+      steps:{
+        0:{icon:"chart",name:"Python Wrangler",cheer:"Step 1 · Messy sales CSV cleaned with Python — done."},
+        1:{icon:"spark",name:"Regression Modeler",cheer:"Step 2 · 6-Month linear regression forecast chart generated — done."},
+        2:{icon:"coin",name:"ROI Strategist",cheer:"Step 3 · Marketing budget correlation proved mathematically — done."},
+        3:{icon:"trophy",name:"P6 — 营收引擎已完成",cheer:"Play 6 预测性营收引擎 — cleared!"}
+      },
+      module:{icon:"trophy",name:"P6 — 预测性营收",cheer:"预测性营收引擎 — cleared."}
+    }
+  },
+  P7:{
+    code:"P7", name:"智能体社会影响力顾问", sub:"智能体社会影响力顾问 · Drive · Web Search", env:"prod · agent-platform", accentVar:"--indigo",
+    steps:[],
+    badges:{
+      steps:{
+        0:{icon:"flight",name:"CSR Agent Designer",cheer:"Step 1 · Specialized CSR chat agent created — done."},
+        1:{icon:"search",name:"Charity Auditor",cheer:"Step 2 · Charities vetted against internal Drive brief — done."},
+        2:{icon:"heart",name:"ESG Accountability Pro",cheer:"Step 3 · Inquiry & accountability card drafted — done."},
+        3:{icon:"compass",name:"Global Strategist",cheer:"Step 4 · Saved agent tested across regions — done."},
+        4:{icon:"check",name:"Impact Publisher",cheer:"Step 5 · Partner outreach finalized — done."},
+        5:{icon:"trophy",name:"P7 — 智能体社会影响力顾问已完成",cheer:"Play 7 智能体社会影响力顾问 — cleared!"}
+      },
+      module:{icon:"trophy",name:"P7 — 智能体社会影响力顾问",cheer:"智能体社会影响力顾问 — cleared."}
+    }
+  }
+};
+
+/* ===== P1 steps (Play 1：破冰) ===== */
+MISSIONS.P1.steps.push({
+  nav:{title:"Step 1 · Visit website & summarize",sub:""},
+  eyebrow:{text:"P1 · 破冰",tone:"default"},
+  playIntro:{
+    title:"Play 1：破冰",
+    scenario:"在第一个 Play 中，您将了解 Gemini Enterprise 如何访问实时网站、提取关键业务上下文，并将这些基础信息转化为出色的营销视觉素材。"
+  },
+  h2:"Step 1 · Visit website & summarize",
+  lede:"让我们首先使用实时网页工具，将 Gemini Enterprise 与您的真实业务网站进行关联（Grounding）。",
+  fx:"none",
+  nextLabel:"Next: 步骤 2 · 社交媒体宣传图",
+  blocks:[
+    {type:"prose",html:"<ol><li>在浏览器中打开 Gemini Enterprise。</li><li>在聊天框中复制并粘贴以下提示词，将 <strong>[ENTER YOUR WEBSITE HERE]</strong> 替换为您的公司网站 URL，然后按回车键（ENTER）。</li></ol>"},
+    {type:"prompt",text:"Use your live web tools to visit this business's website\n\n[ENTER YOUR WEBSITE URL HERE]\n\nand write a detailed summary of the business."},
+    {type:"prose",html:"<p>预期结果：Gemini 会访问您的实时网址，解析产品、使命和价值主张，并生成结构化的企业摘要。</p>"}
+  ]
+});
+MISSIONS.P1.steps.push({
+  nav:{title:"步骤 2 · 社交媒体宣传图",sub:""},
+  eyebrow:{text:"P1 · 破冰",tone:"default"},
+  h2:"步骤 2 · 社交媒体宣传图",
+  lede:"将您刚刚提取的网站基础信息转化为高转化率的视觉素材。",
+  fx:"none",
+  nextLabel:"Next: 步骤 3 · 信息图仪表盘",
+  blocks:[
+    {type:"prose",html:"<ol start=\"3\"><li>在聊天栏中，选择 <strong>Tools</strong> 图标，然后选择 <strong>Create images.</strong></li><li>复制并粘贴以下提示词，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Now, use this exact business description to create a social media advertising graphic."},
+    {type:"prose",html:"<ol start=\"5\"><li>回顾与检查：生成的图片是否准确反映了您网站上的业务描述？注意观察其视觉美学和信息传递是否与品牌形象保持一致。</li></ol>"}
+  ]
+});
+MISSIONS.P1.steps.push({
+  nav:{title:"步骤 3 · 信息图仪表盘",sub:""},
+  eyebrow:{text:"P1 · 破冰",tone:"default"},
+  h2:"步骤 3 · 信息图仪表盘（可选）",
+  lede:"尝试使用自定义信息图仪表盘，将高关注度的零售 KPI 可视化。",
+  fx:"none",
+  nextLabel:"Next: 步骤 4 · 您构建了什么",
+  blocks:[
+    {type:"prose",html:"<p>如果您有更多时间，可以继续探索图像生成和自定义指挥中心图形。</p><ol start=\"6\"><li>Click <strong>New chat</strong> （在侧边栏中）以创建新的上下文。</li><li>在聊天栏中，选择 <strong>Tools</strong> 图标，然后选择 <strong>Create images</strong>.</li><li>In the chat, copy and paste the following prompt and modify the style section that begins &quot;Visual &amp; Aesthetic Style&quot; to any style you would like. Press ENTER when you are ready to submit the prompt.</li></ol>"},
+    {type:"prompt",text:"Generate a corporate dashboard infographic image.\n\nVisual & Aesthetic Style:\nUltra-modern real-time command center, dark background, glowing data visualizations in electric blue, emerald green, and white.\n\nData & Content Requirements:\nMain Title: \"BLACK FRIDAY POWER PLAY\"\nGlobal KPI: \"$50M GLOBAL SALES TARGET\"\nMetric Grid: A 2x2 layout featuring four key metrics with relevant minimalist icons:\nIN-STORE EXPERIENCE (98% Positive)\nDIGITAL CONVERSION (+40% Add-to-Cart)\nLOGISTICS (<2 HR CLICK & COLLECT)\nSOCIAL REACH (80M IMPRESSIONS)"},
+    {type:"prose",html:"<p>预期结果：生成一张惊艳的 2x2 信息图仪表盘，包含数据图表、清晰的排版和高管级 KPI。</p>"}
+  ]
+});
+MISSIONS.P1.steps.push({
+  nav:{title:"步骤 4 · 您构建了什么",sub:""},
+  eyebrow:{text:"P1 · 破冰",tone:"success"},
+  h2:"步骤 4 · 您构建了什么",
+  lede:"您已在几秒钟内将 Gemini 接入实时网页数据，并生成了品牌化的视觉素材。",
+  fx:"none",
+  restart:true,
+  blocks:[
+    {type:"celebrate",title:"破冰完成！",sub:"您已完成 Play 1 并解锁了首批高管徽章。"},
+    {type:"prose",html:"<p>在不到五分钟的时间内，您完成了：</p><ul><li>从实时网站 URL 中提取了实时的企业级基础信息（Grounding）。</li><li>创建了符合品牌形象的定制化社交媒体广告素材。</li><li>设计了超现代的“黑色星期五 KPI 指挥中心”信息图。</li></ul><p>接下来，让我们进入 <strong>Play 2 · 使用 Google 智能体让您的工作更轻松</strong>，届时您将使用 BigQuery 智能体、多路 CCTV 视频流和 Canvas 来执行企业合规审计。</p>"}
+  ]
+});
+
+/* ===== P2 steps (Play 2：使用 Google 智能体让您的工作更轻松) ===== */
+MISSIONS.P2.steps.push({
+  nav:{title:"Step 1 · Enterprise Data Discovery",sub:""},
+  eyebrow:{text:"P2 · 使用 Google 智能体让您的工作更轻松",tone:"default"},
+  playIntro:{
+    title:"Play 2：使用 Google 智能体让您的工作更轻松",
+    howTo:"使用 Google 智能体让您的工作更轻松 - How to Do It:",
+    scenario:"In this section on Enterprise Data Discovery, we will see how a retail manager can uncover compliance outliers from multimodal data like store walkthrough videos and analyze structured data in BigQuery. The BigQuery incident logs contain historical store safety, operational hazard, and policy violation records across retail locations."
+  },
+  h2:"Step 1 · Enterprise Data Discovery",
+  lede:"Query BigQuery incident logs with natural language to spot retail outlier locations.",
+  fx:"none",
+  nextLabel:"Next: Step 2 · CCTV Target Cameras",
+  blocks:[
+    {type:"prose",html:"<ol><li>打开 Gemini Enterprise，在侧边栏点击 <strong>Agents</strong> 打开智能体库（Agents Gallery）。<ul><li>Agents Gallery 是业务用户发现 Google、个人用户及组织管理员所构建智能体的地方。</li><li>第 2 行为组织管理员创建的智能体——通常用于以专业代码构建并分享给全体业务用户的复杂场景。</li><li>第 3 行为个人智能体——通过无代码/低代码创建，我们稍后将学习如何创建以提升个人效率。</li></ul></li><li>在“From your organization”部分点击 <strong>BQ incident log</strong> 智能体以打开它。<ul><li>该智能体由 BigQuery 团队创建并共享给您，支持使用自然语言查询底层数据。</li><li>在 Gemini Enterprise 中，智能体可以共享给个人、群组或整个组织。</li></ul></li><li>将以下提示词复制并粘贴到聊天框中，然后按回车键（ENTER）。</li></ol>"},
+    {type:"prompt",text:"Which of our retail locations has the highest proportion of recent incidents in July? Please visualize the top 5 outlier stores in a bar chart."},
+    {type:"prose",html:"<ol start=\"4\"><li>BigQuery 智能体可能需要您进行授权。如果需要：<ul><li>切换到 <strong>My Password</strong> 标签页并复制临时账号密码。</li><li>返回主标签页并点击 <strong>Authorize</strong>。</li><li>选择您的临时账号并粘贴密码。</li><li>点击 <strong>Continue</strong>，最后点击 <strong>Allow</strong>，授权后智能体将自动运行。</li></ul></li></ol><p>预期结果：BQ 智能体会编写 SQL 代码、在数据库上执行查询，并返回柱状图与高管摘要。</p>"}
+  ]
+});
+MISSIONS.P2.steps.push({
+  nav:{title:"Step 2 · CCTV Target Cameras",sub:""},
+  eyebrow:{text:"P2 · 使用 Google 智能体让您的工作更轻松",tone:"default"},
+  h2:"Step 2 · CCTV Target Cameras",
+  lede:"Drill into the July incident records for Western Hub (Store #402) to identify CCTV recordings of high-severity incidents.",
+  fx:"none",
+  nextLabel:"Next: Step 3 · Multistream CCTV Analysis",
+  blocks:[
+    {type:"prose",html:"<ol start=\"5\"><li>查看 BigQuery 智能体返回的结果：Western Hub（#402 门店）作为显著异常值脱颖而出，绝大多数事件集中在 7 月。结果告诉了我们“发生了什么”；要理解“为什么”，我们需要查看 #402 门店的监控视频流。</li><li>复制并粘贴以下提示词，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Focusing on those recent incidents at Western Hub (Store #402) in July, please pull the detailed incident records and list the specific CCTV camera IDs that recorded High severity safety and policy violations."},
+    {type:"prose",html:"<p>预期结果：智能体列出发生高严重性违规的确切摄像头 ID（Camera 12、Camera 14、Camera 21）。</p>"}
+  ]
+});
+MISSIONS.P2.steps.push({
+  nav:{title:"Step 3 · Multistream CCTV Analysis",sub:""},
+  eyebrow:{text:"P2 · 使用 Google 智能体让您的工作更轻松",tone:"default"},
+  h2:"Step 3 · Multistream CCTV Analysis",
+  lede:"Simultaneously inspect 3 video feeds against store guidelines PDFs.",
+  fx:"none",
+  nextLabel:"Next: Step 4 · Canvas Audit Report",
+  blocks:[
+    {type:"prose",html:"<p>Now that we have the camera IDs, it's time to retrieve the relevant feeds and analyze the CCTV footage. These CCTV recordings provide a direct view of daily operations, allowing us to analyze layout efficiency, promotional placement, security, and safety hazards</p><ol start=\"7\"><li>打开 Gemini Enterprise 并开启一个新对话。</li><li>在聊天栏中，选择 <strong>+</strong> 图标，然后选择 <strong>Add from Drive</strong>.</li><li>In the dialog, navigate to the <strong>Play 2：使用 Google 智能体让您的工作更轻松</strong> folder, select the following files, and click <strong>Insert</strong>.<ul><li><strong>camera_12_checkout_3.mp4</strong></li><li><strong>camera_14_loading_dock.mp4</strong></li><li><strong>camera_21_main_aisle.mp4</strong></li><li><strong>store_guidelines.pdf</strong></li></ul></li><li>Wait for the assets to load, and then copy and paste the following prompt in the chat, and press ENTER.</li></ol>"},
+    {type:"prompt",text:"Act as a retail AI Security Analyst. Simultaneously analyze the 3 CCTV feeds for Store #402 against the attached Store Guidelines PDF. \nGenerate a table reporting any incidents with these columns:\n| Camera Location | Observed Incident (safety/operational hazard) | Policy Violated (exact quote from guidelines) | Severity Level (High, Medium, Low) |"},
+    {type:"prose",html:"<p>预期结果：Gemini 并行分析全部三路视频流，将其与 PDF 中的政策要求进行比对，并生成一份包含安全隐患与合规违规项的审计表。</p>"}
+  ]
+});
+MISSIONS.P2.steps.push({
+  nav:{title:"Step 4 · Canvas Audit Report & Interactive editing",sub:""},
+  eyebrow:{text:"P2 · 使用 Google 智能体让您的工作更轻松",tone:"default"},
+  h2:"Step 4 · Canvas Audit Report & Interactive editing",
+  lede:"Convert raw video findings into a formal executive report and refine in Canvas.",
+  fx:"none",
+  nextLabel:"Next: Step 5 · What you built",
+  blocks:[
+    {type:"prose",html:"<ol start=\"11\"><li>In the chat bar, use the model drop down at the right to select <strong>3.6 Flash</strong>.</li><li>复制并粘贴以下提示词，然后按回车键。 The prompt takes the raw analysis and formats it more appropriately for a formal document.</li></ol>"},
+    {type:"prompt",text:"Use Canvas to turn this analysis into a formal \"Store #402 Compliance Audit Report\" for leadership that ends with a \"Recommended Corrective Actions\" section."},
+    {type:"prose",html:"<ol start=\"13\"><li>在 Canvas 文档中找到 <strong>Recommended Corrective Actions</strong> 部分，并用鼠标选中其下方的文本。<ul><li>选中文本下方会出现“Ask Gemini”浮动编辑栏；如果未出现，请取消选中后重试。</li></ul></li><li>在浮动编辑栏中复制并粘贴以下提示词，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Make these recommendations more urgent. Add a mandatory requirement for the Store Manager to hold a 10-minute safety stand-down meeting with all floor staff by 9:00 AM tomorrow."},
+    {type:"prose",html:"<ol start=\"15\"><li>等待 Gemini 刷新 Canvas 内容，它会仅针对选中部分动态重写以体现新指令，同时保留报告其余部分的格式不变。</li><li>现在可以与区域管理团队分享该报告了。点击 Canvas 面板右上角的 <strong>Export</strong>，选择 <strong>Download as docx</strong>（或下载为 PDF / 导出至 Google Docs）。</li></ol>"}
+  ]
+});
+MISSIONS.P2.steps.push({
+  nav:{title:"Step 5 · What you built",sub:""},
+  eyebrow:{text:"P2 · 使用 Google 智能体让您的工作更轻松",tone:"success"},
+  h2:"Step 5 · What you built",
+  lede:"From BigQuery code (SQL) generation to multistream video auditing and Canvas reporting.",
+  fx:"none",
+  restart:true,
+  blocks:[
+    {type:"celebrate",title:"使用 Google 智能体让您的工作更轻松 Cleared!",sub:"You mastered BigQuery Agents, multi-video reasoning, and Canvas."},
+    {type:"prose",html:"<p>在 Play 2 中您展示了：</p><ul><li>Using Google 1p (first party) agents to analyze structured data using Natural language using a shared BQ incident log agent.</li><li>Simultaneous multi-modal video analysis across three CCTV camera feeds against a PDF rulebook.</li><li>Collaborative document drafting and targeted inline rewriting using Gemini Canvas.</li></ul><p>Next up is <strong>Play 3：设计您自己的工作流智能体</strong>, where you will design an automated supply chain workflow agent with Human-in-the-Loop (HITL) approval gates and execution tracking via the Runs tab.</p>"}
+  ]
+});
+
+/* ===== P3 steps (Play 3：设计您自己的工作流智能体) ===== */
+MISSIONS.P3.steps.push({
+  nav:{title:"Step 1 · Initialize Workflow Prompt",sub:""},
+  eyebrow:{text:"P3 · 工作流智能体",tone:"default"},
+  playIntro:{
+    title:"Play 3：设计您自己的工作流智能体",
+    scenario:"Create a custom supply chain agent that reviews inventory data per product, reviews vendor quotes, and finally sends email or creates meeting invites for purchase approvals. Whole inventory data can be accessed in ERP applications; for this section we will use Google Drive & Gmail as the data sources."
+  },
+  h2:"Step 1 · Initialize Workflow Prompt (Supply Chain Fix)",
+  lede:"Create a custom supply chain agent.",
+  fx:"none",
+  nextLabel:"Next: Step 2 · Schedule & HITL Gate",
+  blocks:[
+    {type:"prose",html:"<ol><li>打开 Gemini Enterprise。</li><li>在侧边栏中点击 <strong>+ New agent &gt; Workflow</strong>。</li><li>如有需要，可使用汉堡菜单图标折叠侧边栏。</li><li>在聊天框中复制并粘贴以下提示词，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Act as a Supply Chain Analyst. Complete this workflow and wait for my decision at Step 4:\n1. Check Drive: Find items below reorder levels in the \"Master Inventory Status\" spreadsheet.\n2. Check Gmail: Extract pricing from the body of emails in my inbox with the subject \"Restock Pricing\" \n3. Analyze: Match lowest-cost vendors to low-stock items. (Flag a prominent \"Sole-Source Exception Warning\" if fewer than 3 quotes are found).\n4. HITL Choice: Present the summary. Ask me to reply with \"Approve\" or \"Reject\". \n5. Branching Execution:\n   - IF APPROVED: Schedule a 15-minute Calendar hold tomorrow morning titled \"Procurement Final Sign-off\" and email me the \"Approved\" summary template below.\n   - IF REJECTED: Ask me for feedback or alternative instructions, and do NOT schedule the calendar event.\n--- EMAIL OUTPUT TEMPLATE (For Approval) ---\nSubject: Retail Supply Chain Execution Report: [Date]\n1. Shortages: [Total count] items below threshold. (Critical: [List top 3 furthest below])\n2. Vendor Selection: [Total quotes analyzed] quotes processed. \n   - [Item Name] - [Vendor] @ [Unit Price]\n3. Status: Workflow Approved. Calendar hold scheduled.\n4. Total Estimated Cost: [Calculate total]"},
+    {type:"prose",html:"<ol start=\"5\"><li>The agent will take 30-60 seconds to be created. It will appear inside the editor once complete.<ul><li>The designer may pause to ask questions as it builds the agent. If so, respond in a way that encourages the designer to proceed with building the agent.</li></ul></li></ol><p>What to expect: the 工作流智能体 designer generates a visual 5-step automation pipeline with integrated Workspace connectors.</p>"}
+  ]
+});
+MISSIONS.P3.steps.push({
+  nav:{title:"Step 2 · Schedule & HITL Gate",sub:""},
+  eyebrow:{text:"P3 · 工作流智能体",tone:"default"},
+  h2:"Step 2 · Schedule & HITL Gate",
+  lede:"Configure daily 6:00 AM background execution with human sign-off before calendar scheduling.",
+  fx:"none",
+  nextLabel:"Next: Step 3 · Test & Publish",
+  blocks:[
+    {type:"prose",html:"<ol start=\"6\"><li>当设计器中显示智能体步骤后，依次点击各个步骤，右侧将显示步骤详情。您可以阅读和编辑指令、检查工具与集成，并设置需要人工审核。<ul><li>注意各个步骤已连接到您的日历、电子邮件或 Drive。</li></ul></li><li>点击 <strong>Manual Trigger</strong> 编辑默认触发器。</li><li>选择 <strong>Schedule</strong> 切换为定时触发器，并设置以下参数：<ul><li><strong>重复频率</strong>：Daily（每日）</li><li><strong>执行时间</strong>：06:00 AM</li><li><strong>时区</strong>：Eastern Time/New_York（或您的本地时区）</li></ul><p><strong>注意</strong>：由于此工作流设置了人工审批关卡（HITL），定时智能体会在早上 6:00 静默运行、汇总所有数据后安全暂停——并在您的 Gemini 聊天历史中留下通知，等待您登录后点击“Approve”。</p></li></ol>"}
+  ]
+});
+MISSIONS.P3.steps.push({
+  nav:{title:"Step 3 · Test & Publish",sub:""},
+  eyebrow:{text:"P3 · 工作流智能体",tone:"default"},
+  h2:"Step 3 · Test & Publish",
+  lede:"Preview the workflow, approve the HITL gate, and deploy your new agent to the gallery.",
+  fx:"none",
+  nextLabel:"Next: 步骤 4 · 您构建了什么",
+  blocks:[
+    {type:"prose",html:"<ol start=\"10\"><li>点击屏幕顶部的 <strong>Test</strong> 打开测试面板。</li><li>点击 <strong>Start a test run</strong> 观察智能体运行，注意它在需要人工输入时会暂停。</li><li>当提示批准采购订单时予以批准。</li><li>等待智能体运行完成，然后打开新的浏览器标签页检查 Gmail 收件箱和 Google 日历，查看智能体生成的产物。</li><li>最后点击 <strong>Turn on</strong> 部署智能体，并在权限弹窗出现时点击 <strong>Authorize</strong>（可能需要输入临时账号密码）。</li><li>在侧边栏点击 <strong>Agents</strong>，在“Your agents”列表中查看您的新智能体。</li></ol>"}
+  ]
+});
+MISSIONS.P3.steps.push({
+  nav:{title:"步骤 4 · 您构建了什么",sub:""},
+  eyebrow:{text:"P3 · 工作流智能体",tone:"success"},
+  h2:"步骤 4 · 您构建了什么",
+  lede:"You built a scheduled supply chain automation agent with mandatory HITL governance.",
+  fx:"none",
+  restart:true,
+  blocks:[
+    {type:"celebrate",title:"工作流智能体 Cleared!",sub:"You mastered Agent Designer, scheduled triggers, and HITL gates."},
+    {type:"prose",html:"<p>在 Play 3 中您展示了：</p><ul><li>Natural language design of multi-step workflow automation agents (Supply Chain Fix).</li><li>Integration of Google Drive, Gmail, and Google Calendar connectors.</li><li>Configuration of daily scheduled runs with interactive Human-in-the-Loop approval gates and execution tracking via the Runs tab.</li></ul><p>接下来，让我们进入 <strong>Play 4: The Global Mergers and Acquisitions (M&amp;A) War Room</strong>, where you will translate Japanese operational disclosures, visualize cross-border risk, generate a Board PPTX presentation in Canvas, and prepare a Plan B counter-offer.</p>"}
+  ]
+});
+
+/* ===== P4 steps (Play 4：全球并购（M&A）作战室) ===== */
+MISSIONS.P4.steps.push({
+  nav:{title:"Step 1 · Multilingual Translation & Synthesis",sub:""},
+  eyebrow:{text:"P4 · 并购作战室",tone:"default"},
+  playIntro:{
+    title:"Play 4：全球并购（M&A）作战室",
+    scenario:"You are the VP of Corporate Development at Cymbal. You have 48 hours to present a go/no-go decision to the board regarding the acquisition of a Japanese firm, Takahashi Robotics. You just received their Q2 operational disclosures in Japanese, along with your US parent company's strict ESG (Environmental) and IT Data Residency guardrails. You need to translate, synthesize, and identify deal-breakers instantly."
+  },
+  h2:"Step 1 · Multilingual Translation & Synthesis",
+  lede:"Translate Japanese operational disclosures and cross-reference against US ESG compliance guardrails.",
+  fx:"none",
+  nextLabel:"Next: Step 2 · Cross-Border Risk Matrix",
+  blocks:[
+    {type:"prose",html:"<ol><li>打开 Gemini Enterprise 并开启一个新对话。</li><li>在聊天栏中，选择 <strong>+</strong> 图标，然后选择 <strong>Add from Drive</strong>.</li><li>In the dialog, navigate to the <strong>Play 4: Global Mergers and Acquisitions (M&amp;A) War Room</strong> folder, select the following two files, and click <strong>Insert</strong>:<ul><li><strong>Takahashi_Robotics_Q2_Report.txt</strong> (The target company's Japanese disclosures)</li><li><strong>Compliance_Parameters_US.csv</strong> (Your firm's strict ESG and IT rules)</li></ul></li><li>In the chat, copy and paste the following prompt, then press ENTER.</li></ol>"},
+    {type:"prompt",text:"Act as my Lead M&A Advisor. I have uploaded the Japanese operational disclosures from our acquisition target, Takahashi Robotics, and our US parent company's strict ESG and IT compliance parameters.\nFirst, silently translate the Japanese document. Second, compare the translated target data against our US parameters and provide a 3-bullet executive summary of the biggest deal-breaking conflicts."},
+    {type:"prose",html:"<p>预期结果：观察 Gemini 如何翻译日文文本、将其与您的 CSV 交叉比对，并识别关键冲突（例如 Takahashi 在制造中依赖不可再生能源 vs. 美国 100% 碳中和运营要求，以及其本地服务器数据存储 vs. 美国云驻留合规要求）。</p>"}
+  ]
+});
+MISSIONS.P4.steps.push({
+  nav:{title:"Step 2 · Cross-Border Risk Matrix",sub:""},
+  eyebrow:{text:"P4 · 并购作战室",tone:"default"},
+  h2:"Step 2 · Cross-Border Risk Matrix",
+  lede:"Visualize deal-breaker conflicts and mitigation strategies for the board in a structured Risk Matrix table.",
+  fx:"none",
+  nextLabel:"Next: Step 3 · Board PPTX in Canvas",
+  blocks:[
+    {type:"prose",html:"<ol start=\"5\"><li>Executives need to see the data clearly to make quick decisions. 复制并粘贴以下提示词，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Visualize these conflicts for the board. Generate a cross-border Risk Matrix table with the following columns:\n| Risk Category | Takahashi Position (Translated) | US Parent Requirement | Risk Level (High/Medium/Low) | Proposed Mitigation Strategy |"},
+    {type:"prose",html:"<ol start=\"6\"><li>审阅表格。注意 Gemini 不仅进行了翻译，还深入推理了业务影响并提出了缓解策略。</li><li>如果能将此风险矩阵发送到电子邮件中会非常有用。将以下提示词复制并粘贴到聊天框中，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Email this to me."},
+    {type:"prose",html:"<ol start=\"8\"><li>Gemini 会请您确认是否发送邮件。确认后在另一个标签页中打开 Gmail，您应该能看到包含风险矩阵的邮件。</li></ol>"}
+  ]
+});
+MISSIONS.P4.steps.push({
+  nav:{title:"Step 3 · Board PPTX in Canvas",sub:""},
+  eyebrow:{text:"P4 · 并购作战室",tone:"default"},
+  h2:"Step 3 · Board Presentation in Canvas",
+  lede:"Generate a 4-slide Board of Directors PPTX presentation summarizing the Takahashi M&A analysis.",
+  fx:"none",
+  nextLabel:"Next: Step 4 · Plan B Counter-Offer & Etiquette",
+  blocks:[
+    {type:"prose",html:"<ol start=\"9\"><li>现在是向董事会汇报的时候了。 在聊天栏中，选择 <strong>Tools</strong> 图标，然后选择 <strong>Canvas</strong>.</li><li>Also in the chat bar, use the model drop down at the right to select <strong>3.6 Flash</strong>.</li><li>Still in the chat bar, select the <strong>+</strong> 图标，然后选择 <strong>Add from Drive</strong>.</li><li>In the dialog, navigate to the <strong>Play 4: Global Mergers and Acquisitions (M&amp;A) War Room</strong> folder, select the following file, and click <strong>Insert</strong>:<ul><li><strong>Brand Guidelines.pdf</strong></li></ul></li><li>Type <strong>Use @b</strong> in the chat and select <strong>brand-voice</strong> from the <strong>Skills</strong> section. Do <strong>NOT</strong> submit the prompt yet.</li><li>Copy and paste the following prompt into the chat <strong>AFTER</strong> the existing content, then press ENTER.</li></ol>"},
+    {type:"prompt",text:" skill to extract the brand guidelines from the branding pdf.\nThen use these brand guidelines in Canvas to generate a PPTX presentation for the Board of Directors summarizing the Takahashi Robotics M&A analysis.\nStructure it with 4 slides:\nExecutive Title Slide\nFinancial Overview & Q2 Performance\nCross-Border Deal-Breakers (Highlighting the ESG and Data Residency conflicts)\nStrategic Recommendation (Recommend halting the deal unless terms change)."},
+    {type:"prose",html:"<ol start=\"15\"><li>检查 Canvas 面板中的品牌幻灯片，然后点击右上角的 <strong>Export</strong> 并选择 <strong>Download as pptx</strong>。</li><li>您已经拿到了演示文稿，但您知道董事会一定会问这笔交易是否还有挽救余地。在走进会议室前，您需要准备好“Plan B”重组方案。点击 Canvas 窗口右上角的 <strong>X</strong> 关闭它。</li></ol>"}
+  ]
+});
+MISSIONS.P4.steps.push({
+  nav:{title:"Step 4 · Plan B Counter-Offer & Etiquette",sub:""},
+  eyebrow:{text:"P4 · 并购作战室",tone:"default"},
+  h2:"Step 4 · Plan B Counter-Offer & Etiquette",
+  lede:"Calculate upgrade penalty costs, formulate an adjusted purchase price, and apply Japanese business etiquette.",
+  fx:"none",
+  nextLabel:"Next: Step 5 · What you built",
+  blocks:[
+    {type:"prose",html:"<ol start=\"17\"><li>将以下提示词复制并粘贴到聊天框中，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"The board will want a \"Plan B\" to salvage this deal. We need to restructure the financials so the purchase price absorbs the cost of upgrading their IT and energy infrastructure to meet our compliance standards.\nAssume the required facility and server upgrades will cost $500,000 per quarter.\nCalculate the total cost of these required upgrades over a mandatory 2-year integration period.\nSubtract that exact penalty cost from our $15,000,000 maximum budget to establish our new adjusted purchase price.\nPresent this in a \"Revised Term Sheet\" markdown table.\nFinally, give me a 3-step strategy on how to present this lowered purchase price to the Takahashi CEO without causing a loss of \"face\" (メンツ), applying proper Japanese business etiquette."},
+    {type:"prose",html:"<ol start=\"18\"><li>查看输出结果，了解 Gemini 如何兼任首席财务官（CFO）与文化顾问，在财务严谨性与文化尊重之间取得平衡。</li></ol>"}
+  ]
+});
+MISSIONS.P4.steps.push({
+  nav:{title:"Step 5 · What you built",sub:""},
+  eyebrow:{text:"P4 · 并购作战室",tone:"success"},
+  h2:"Step 5 · What you built",
+  lede:"You translated foreign financial disclosures, quantified ESG risk, built a board deck, and prepared a culturally attuned counter-offer.",
+  fx:"none",
+  restart:true,
+  blocks:[
+    {type:"celebrate",title:"并购作战室 Cleared!",sub:"You mastered multilingual financial translation, cross-border risk tables, Canvas PPTX decks, and Plan B etiquette."},
+    {type:"prose",html:"<p>在 Play 4 中您展示了：</p><ul><li>Silently translating Japanese Q2 operational disclosures and cross-referencing against US CSV compliance guardrails.</li><li>Visualizing cross-border deal-breakers in a structured Risk Matrix table with proposed mitigations.</li><li>Generating a 4-slide Board of Directors PPTX deck in Canvas and exporting to PowerPoint.</li><li>Calculating a revised purchase price and formulating a Japanese etiquette strategy to preserve 'face' (メンツ).</li></ul><p>接下来，让我们进入 <strong>Play 5：使用 Gemini Notebook 管理危机</strong>, where you will use Gemini Notebook to prepare for an urgent COO briefing in 30 minutes.</p>"}
+  ]
+});
+
+/* ===== P5 steps (Play 5：使用 Gemini Notebook 管理危机) ===== */
+MISSIONS.P5.steps.push({
+  nav:{title:"Step 1 · Synthesize Executive Briefing",sub:""},
+  eyebrow:{text:"P5 · 危机笔记本",tone:"default"},
+  playIntro:{
+    title:"Play 5：使用 Gemini Notebook 管理危机",
+    scenario:"As VP of Retail Operations, you have exactly 30 minutes before an urgent sync with the corporate COO about the Q3 Promo &amp; Supply Chain Anomalies. You have three unread regional reports and one frantic voicemail from your West Hub manager. You need to instantly synthesize this multi-modal data to protect your region and command the conversation."
+  },
+  h2:"Step 1 · Synthesize Executive Briefing",
+  lede:"Synthesize three regional reports and a frantic voicemail into a 1-page COO briefing.",
+  fx:"none",
+  nextLabel:"Next: Step 2 · Regional Logistics Comparison",
+  blocks:[
+    {type:"prose",html:"<ol><li>切换到浏览器中的 <strong>Gemini Notebook - Gemini Enterprise</strong> 标签页（如果未出现或已关闭，可开启新对话并点击聊天框下方的 <strong>Gemini Notebook</strong> 快捷链接）。</li><li>笔记本打开后，左侧面板显示四个来源（一通电话录音及三份当前促销活动的区域报告）；右侧 Studio 面板包含预先生成的资源：交互式音频概览、信息图、幻灯片、报告和思维导图。</li><li>如需更多空间，可使用汉堡图标折叠侧边栏。</li><li>将以下提示词复制并粘贴到主聊天框中，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Act as my Chief of Staff.\nBased strictly on the uploaded regional reports and the audio voicemail, generate a concise, 1-page briefing document to prepare me for my call with the corporate COO.\n\nStructure the briefing with the following markdown headings:\n- Q3 Promo Executive Summary: Provide 3 bullet points summarizing the launch performance across regions.\n- Critical Escalation: Summarize the specific operational outlier and inventory warning mentioned in the audio voicemail.\n- Q&A Prep: Generate the 3 toughest questions the COO is likely to ask about this situation, and provide data-backed answers using only the provided sources."},
+    {type:"prose",html:"<p>预期结果：生成一份精炼的 1 页高管简报，附带直接链接到源 PDF 段落和音频转录时间戳的引用标签。</p>"}
+  ]
+});
+MISSIONS.P5.steps.push({
+  nav:{title:"Step 2 · Regional Logistics Comparison",sub:""},
+  eyebrow:{text:"P5 · 危机笔记本",tone:"default"},
+  h2:"Step 2 · Regional Logistics Comparison",
+  lede:"Cross-reference regional reports into a comparative logistics table.",
+  fx:"none",
+  nextLabel:"Next: Step 3 · Roleplay & Objection Neutralization",
+  blocks:[
+    {type:"prose",html:"<ol start=\"5\"><li>查看输出：注意 Gemini Notebook 在每项陈述旁提供了带编号的引用标签。点击引用编号可立即跳转到 PDF 原文段落或音频转录的对应位置。点击面板顶部的 <strong>Sources</strong> 返回默认视图。</li><li>通过复制粘贴以下提示词到聊天框并按回车键，测试 AI 交叉比对报告并可视化格式化数据的能力。</li></ol>"},
+    {type:"prompt",text:"The COO will want to know if this dock lockdown is an isolated incident.\nCompare the West, North, and South hubs in a simple Markdown table using three columns: Region, Demand Status, and Delays. Keep the text in each cell very brief (short bullet points or single sentences only)."},
+    {type:"prose",html:"<p>预期结果：立即生成对比表格，突出显示为何 West Hub 相比北部和南部区域成为运营异常点。</p>"}
+  ]
+});
+MISSIONS.P5.steps.push({
+  nav:{title:"Step 3 · Roleplay & Objection Neutralization",sub:""},
+  eyebrow:{text:"P5 · 危机笔记本",tone:"default"},
+  h2:"Step 3 · Roleplay & Objection Neutralization",
+  lede:"Roleplay as the COO to expose objections, then switch back to Chief of Staff for a rebuttal.",
+  fx:"none",
+  nextLabel:"Next: Step 4 · Studio & Interactive Audio",
+  blocks:[
+    {type:"prose",html:"<ol start=\"7\"><li>现在是制定行动计划的时候了。将以下提示词复制并粘贴到主聊天框中，然后按回车键：</li></ol>"},
+    {type:"prompt",text:"I am going to propose \"autonomous logistics overrides\" to the COO to fix the West Hub.\nFirst, play the role of the COO: based on these reports, what is the single biggest operational or financial objection you would have to this plan?\nSecond, switch back to my Chief of Staff: write a 2-sentence, data-backed counter-argument I can use to immediately neutralize that objection and win their approval."},
+    {type:"prose",html:"<p>预期结果：Gemini 会模拟 COO 的财务顾虑，并立即为您准备极具说服力的幕僚长级回应。</p>"}
+  ]
+});
+MISSIONS.P5.steps.push({
+  nav:{title:"Step 4 · Studio & Interactive Audio",sub:""},
+  eyebrow:{text:"P5 · 危机笔记本",tone:"default"},
+  h2:"Step 4 · Studio & Interactive Audio",
+  lede:"Explore pre-generated infographics, mind maps, slides, and join a live interactive podcast.",
+  fx:"none",
+  nextLabel:"Next: Step 5 · What you built",
+  blocks:[
+    {type:"prose",html:"<ol start=\"8\"><li>点击 <strong>Infographic</strong> 卡片（Q3 Launch Performance and Risks）打开信息图并全屏查看，随后点击最小化和顶部的 <strong>Studio</strong> 返回。</li><li>依次点击 <strong>Mind Map</strong> 卡片、<strong>Reports</strong> 卡片和 <strong>Slides</strong> 卡片浏览预先生成的思维导图、简报文档与幻灯片概览，查看后点击 <strong>Studio</strong> 返回。</li><li>在右侧 Studio 面板中点击 <strong>Audio</strong> 卡片（Bypassing the Western Hub dispatch gridlock）开始播放音频。</li><li>点击卡片上出现的 <strong>Interactive</strong> 链接，从静态播客切换为交互式播客。</li><li>点击 <strong>Play</strong> 图标，当主持人开始交谈时点击 <strong>Join</strong> 并提出问题，主持人在模型生成回复后会暂停并直接回答您的问题。</li></ol>"}
+  ]
+});
+MISSIONS.P5.steps.push({
+  nav:{title:"Step 5 · What you built",sub:""},
+  eyebrow:{text:"P5 · 危机笔记本",tone:"success"},
+  h2:"Step 5 · What you built",
+  lede:"In 30 minutes you synthesized 3 regional reports and an audio voicemail into COO-ready prep.",
+  fx:"none",
+  restart:true,
+  blocks:[
+    {type:"celebrate",title:"危机笔记本 Cleared!",sub:"You mastered Gemini Notebook, source citations, and interactive audio."},
+    {type:"prose",html:"<p>在 Play 5 中您展示了：</p><ul><li>Rapid multi-modal synthesis across audio voicemails and regional PDF reports.</li><li>Citation-backed Q&amp;A preparation and executive objection handling.</li><li>Notebook Studio exploration including Infographics, Mind Maps, Slide decks, and real-time Interactive Audio Overviews.</li></ul><p>Next up is <strong>Play 6：预测性营收引擎</strong>, where you will use verifiable Python code execution to clean messy sales data, run linear regression forecasts, and calculate ROI correlations.</p>"}
+  ]
+});
+
+/* ===== P6 steps (Play 6：预测性营收引擎) ===== */
+MISSIONS.P6.steps.push({
+  nav:{title:"Step 1 · Clean Messy Sales CSV with Python",sub:""},
+  eyebrow:{text:"P6 · 预测性营收",tone:"default"},
+  playIntro:{
+    title:"Play 6：预测性营收引擎",
+    scenario:"As a sales leader, you have a messy 5-year global sales export with inconsistent formatting and missing values. Instead of waiting days for a data science team, you instruct Gemini to write and execute verifiable Python code in a sandbox to clean the data, run linear regression forecasting, and find ROI correlations."
+  },
+  h2:"Step 1 · Clean Messy Sales CSV with Python",
+  lede:"Upload a messy 5-year sales export and instruct Gemini to write and execute Python code to clean it.",
+  fx:"none",
+  nextLabel:"Next: Step 2 · Linear Regression Forecast",
+  blocks:[
+    {type:"prose",html:"<ol><li>打开 Gemini Enterprise 并开启一个新对话。</li><li>点击右下角的下拉菜单 of the chat box and select the most recent <strong>Pro</strong> model.</li><li>Click the <strong>+ Add files</strong> icon and select <strong>Add from Drive</strong>.</li><li>In the dialog, navigate to the <strong>Play 6: 预测性营收引擎</strong> folder, select <strong>global_sales_extract_messy.csv</strong>, and click <strong>Insert</strong>.</li><li>In the chat, copy and paste the following prompt, then press ENTER.</li></ol>"},
+    {type:"prompt",text:"Act as my Lead Data Scientist. I have uploaded our 5-year global sales data, but it is a messy export. Please write and run Python code to clean it up: standardize the dates to YYYY-MM, group the regions into \"NA\", \"EMEA\", and \"APAC\", and fix any missing or corrupted numeric data. To ensure full transparency and auditability, you must display the exact Python code you write inside a standard markdown code block in your response."},
+    {type:"prose",html:"<p>预期结果：Gemini 编写 Python 清洗脚本、在安全沙箱中运行，并展示代码块。</p>"}
+  ]
+});
+MISSIONS.P6.steps.push({
+  nav:{title:"Step 2 · Linear Regression Forecast Chart",sub:""},
+  eyebrow:{text:"P6 · 预测性营收",tone:"default"},
+  h2:"Step 2 · Linear Regression Forecast Chart",
+  lede:"Forecast 6-month regional revenue for NA and EMEA using an auditable regression script.",
+  fx:"none",
+  nextLabel:"Next: Step 3 · Marketing ROI Correlation",
+  blocks:[
+    {type:"prose",html:"<ol start=\"6\"><li>现在数据已经清洗完成，将以下提示词复制并粘贴到聊天框中并按回车键，生成营收预测。</li></ol>"},
+    {type:"prompt",text:"Now, using that cleaned data, run a linear regression model to forecast our Revenue for NA and EMEA for the next 6 months. Generate a clean line chart visualizing both the historical and the forecasted revenue for these two regions. Again, display the Python code you used in a markdown code block so we can verify the methodology."},
+    {type:"prose",html:"<p>预期结果：聊天中将生成高分辨率营收趋势图以及完整的 Python 回归分析方法。</p>"}
+  ]
+});
+MISSIONS.P6.steps.push({
+  nav:{title:"Step 3 · Marketing ROI Correlation",sub:""},
+  eyebrow:{text:"P6 · 预测性营收",tone:"default"},
+  h2:"Step 3 · Marketing ROI Correlation",
+  lede:"Calculate mathematical correlation between marketing spend and revenue to support budget decisions.",
+  fx:"none",
+  nextLabel:"Next: 步骤 4 · 您构建了什么",
+  blocks:[
+    {type:"prose",html:"<ol start=\"7\"><li>查看聊天界面中直接生成的图表，无需等待数据科学团队数周即可获得有数据支撑的营收预测。</li><li>复制并粘贴以下提示词到聊天框并按回车键，让 Gemini 挖掘数据中的隐藏相关性以指导即将到来的预算决策。</li></ol>"},
+    {type:"prompt",text:"Now, write and execute code to calculate the correlation coefficient between Mktg_Spend and Revenue_USD. Display the calculation code in a markdown block. Based on the math, write a 2-sentence executive recommendation on whether we should increase our marketing budget next quarter to hit those forecasted numbers."},
+    {type:"prose",html:"<ol start=\"9\"><li>查看最终输出，了解 Gemini 如何用严谨的数学证明支撑其商业建议。</li></ol>"}
+  ]
+});
+MISSIONS.P6.steps.push({
+  nav:{title:"步骤 4 · 您构建了什么",sub:""},
+  eyebrow:{text:"P6 · 预测性营收",tone:"success"},
+  h2:"步骤 4 · 您构建了什么",
+  lede:"You executed verifiable Python data science code directly in chat to forecast revenue.",
+  fx:"none",
+  restart:true,
+  blocks:[
+    {type:"celebrate",title:"营收引擎通关！",sub:"您已完成 Play 6，并掌握了沙箱化 Python 代码执行能力。"},
+    {type:"prose",html:"<p>在 Play 6 中您展示了：</p><ul><li>Automating data cleanup on messy 5-year sales CSV exports using verifiable Python scripts.</li><li>Building linear regression forecasting models for regional revenue projections.</li><li>Proving mathematical ROI correlation between marketing spend and revenue.</li></ul><p>接下来，让我们进入 <strong>Play 7 · 智能体社会影响力顾问</strong>, where you will create an agent for corporate social responsibility (CSR) analysis.</p>"}
+  ]
+});
+
+/* ===== P7 steps (Play 7: 智能体社会影响力顾问) ===== */
+MISSIONS.P7.steps.push({
+  nav:{title:"Step 1 · Create CSR Advisor Agent",sub:""},
+  eyebrow:{text:"P7 · 智能体社会影响力顾问",tone:"default"},
+  playIntro:{
+    title:"Play 7：智能体社会影响力顾问",
+    scenario:"As a corporate social responsibility (CSR) leader, you want to invest in a non-profit matching your company's philanthropic goals. You build a specialized Chat Agent that connects to Google Drive to read your internal brief and uses Google Search to vet real-world charities against strict governance and efficiency metrics."
+  },
+  h2:"Step 1 · Create CSR Advisor Agent",
+  lede:"Create a Chat Agent that combines Google Drive project briefs with live web search audits.",
+  fx:"none",
+  nextLabel:"Next: Step 2 · Vet Charities",
+  blocks:[
+    {type:"prose",html:"<ol><li>在 Gemini Enterprise 侧边栏中点击 <strong>+ New agent</strong>，然后选择 <strong>Chat agent</strong>。</li><li>使用汉堡图标折叠侧边栏。</li><li>将以下提示词复制并粘贴到文本框中并按回车键，创建一个使用 Google Search 和本地 Workspace 连接器、按严格标准分析非营利组织并准备后续沟通的专用智能体。</li></ol>"},
+    {type:"prompt",text:"I want you to create an agent that acts as a Social Good Advisor. \nWorkflow:\n1. Intake, Context Grounding & Vetting (For Prompt 1):\n- Intake & Requests: Access Google Drive to locate the active project brief. Extract Cause, Budget, and Compliance Guardrails.\n- Search & Audit: Use Google Search to find matching charities. Audit them against standard metrics (Age, Revenue, Reach, Integrity, Program Efficiency).\n- Present (Visual Layout): \n  - Show a \"Grounding Confirmation\" block listing the exact extracted rules.\n  - Present the candidates in a clear table: Charity | Founded | Revenue | Program % | Rating | Fit with CSR Strategy.\n  - STOP HERE. Ask the user which charity they would like to select. Do NOT draft any emails or social media posts yet.\n2. Selection, Operational Translation & PR Outputs (For Prompt 2):\n- When the user selects a charity from the list:\n  - DO NOT repeat the search, the grounding table, or the audit table.\n  - Search Drive/Web for the selected charity's exact operational cost structure.\n  - Create an \"Operational Impact Ledger\" (Table) showing exactly what the budget buys (e.g., Cost per Club, Clubs Sponsored, Children Supported, Families Engaged).\n  - Draft the Professional Inquiry Email using these mathematically precise numbers.\n  - Draft the High-Impact Social Media Announcement, ensuring it is visually formatted as an \"ESG Accountability Card\" with clear, bulleted metrics to prevent greenwashing.\nOutput and Style:\n- Tone: Encouraging, analytical, concise. No conversational filler.\n- Format: \n  - For Step 1 (Vetting): Use analytical comparison tables.\n  - For Step 2 (Selection): Use an \"Operational Translation Ledger\" and \"Accountability Cards\" for social media.\n- Formatting Constraints: Absolutely NO LaTeX formatting. Always use standard plain-text symbols like >= or <=."},
+    {type:"prose",html:"<ol start=\"4\"><li>创建智能体大约需要 30–60 秒，完成后会显示在设计器中。点击 <strong>Flow</strong> 标签页查看智能体配置。</li><li>点击设计器中的智能体节点，右侧将显示其详情。</li><li>阅读智能体的名称、描述、指令、模型与连接器，注意它已连接到 Drive 和 Google Search。</li></ol>"}
+  ]
+});
+MISSIONS.P7.steps.push({
+  nav:{title:"Step 2 · Vet Charities Across Drive & Search",sub:""},
+  eyebrow:{text:"P7 · 智能体社会影响力顾问",tone:"default"},
+  h2:"Step 2 · Vet Charities Across Drive & Search",
+  lede:"Test the agent in preview to discover charities grounded in your internal H2 Philanthropy Brief.",
+  fx:"none",
+  nextLabel:"Next: Step 3 · Operational Ledger & ESG Cards",
+  blocks:[
+    {type:"prose",html:"<ol start=\"8\"><li>点击 <strong>Preview</strong> 标签页，将以下提示词复制并粘贴到聊天框中，将 <strong>[Insert Your Country Here]</strong> 替换为您选择的国家，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Please find a charity in \n\n[Insert Your Country Here] \n\nby evaluating our \"H2 Philanthropy Allocation Brief\" and applying our internal CSR strategic framework, both located in Google Drive."},
+    {type:"prose",html:"<ol start=\"9\"><li>如果智能体在任何时候询问是否继续，输入 <strong>Yes</strong> 并按回车键。<p><strong>注意</strong>：该分析非常全面，交叉比对实时数据可能需要片刻时间。如果 5 分钟后仍在加载，可能陷入了循环，可点击聊天框右下角的停止按钮并点击右上角刷新图标重试。</p></li><li>您可以实时观察智能体逐步执行指令中的各项操作。</li></ol>"}
+  ]
+});
+MISSIONS.P7.steps.push({
+  nav:{title:"Step 3 · Operational Ledger & ESG Accountability Cards",sub:""},
+  eyebrow:{text:"P7 · 智能体社会影响力顾问",tone:"default"},
+  h2:"Step 3 · Operational Ledger & ESG Accountability Cards",
+  lede:"Select a charity and generate mathematically precise impact ledgers and anti-greenwashing PR cards.",
+  fx:"none",
+  nextLabel:"Next: Step 4 · Global CSR Testing",
+  blocks:[
+    {type:"prose",html:"<ol start=\"11\"><li>现在选择一家慈善机构并处理公关（PR）需求以完成工作流。复制并粘贴以下提示词，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Let's select the first charity on the list. Please draft the inquiry to their donor coordinator and compose the social media announcement as requested by communications team parameters in the Drive brief."},
+    {type:"prose",html:"<p>预期结果：生成计算精确受益人数的运营影响力账本，以及可直接用于社交媒体的分条式 ESG 问责卡片。</p>"}
+  ]
+});
+MISSIONS.P7.steps.push({
+  nav:{title:"Step 4 · Save & Test Custom Chat Agent",sub:""},
+  eyebrow:{text:"P7 · 智能体社会影响力顾问",tone:"default"},
+  h2:"Step 4 · Save & Test Custom Chat Agent",
+  lede:"Save your agent and test it across new global regions to verify repeatable CSR governance.",
+  fx:"none",
+  nextLabel:"Next: Step 5 · Partner Outreach",
+  blocks:[
+    {type:"prose",html:"<ol start=\"12\"><li>点击 <strong>Create</strong> 构建并保存您的 Social Good Advisor 智能体。</li><li>点击 <strong>Chat with Agent</strong> 打开已保存的智能体界面。</li><li>将以下提示词复制并粘贴到聊天框中，将 <strong>[Insert A Different Country Here]</strong> 替换为另一个国家并按回车键，测试已保存的智能体。</li></ol>"},
+    {type:"prompt",text:"Please find a charity in \n\n[Insert A Different Country Here]\n\nby evaluating our \"H2 Philanthropy Allocation Brief\" and applying our internal CSR strategic framework, both located in Google Drive."},
+    {type:"prose",html:"<p>预期结果：您保存的智能体能够轻松地对新国家运行其结构化信息采集与搜索协议。</p>"}
+  ]
+});
+MISSIONS.P7.steps.push({
+  nav:{title:"Step 5 · Finalize Global Partner Outreach",sub:""},
+  eyebrow:{text:"P7 · 智能体社会影响力顾问",tone:"default"},
+  h2:"Step 5 · Finalize Global Partner Outreach",
+  lede:"Complete the saved agent workflow by generating inquiry emails and ESG accountability posts.",
+  fx:"none",
+  nextLabel:"Next: Step 6 · What you built",
+  blocks:[
+    {type:"prose",html:"<ol start=\"15\"><li>通过处理 PR 需求完成工作流。复制并粘贴以下提示词，然后按回车键。</li></ol>"},
+    {type:"prompt",text:"Let's select the first charity on the list. Please draft the inquiry to their donor coordinator and compose the social media announcement as requested by communications team parameters in the Drive brief."},
+    {type:"prose",html:"<p>预期结果：生成可直接发送的捐赠协调员邮件以及经过核验的 ESG 社交媒体卡片。</p><ol start=\"16\"><li><strong>发布到社交媒体：</strong> 要将您的 ESG 问责卡片发布到公司社交渠道（如 LinkedIn 或 X），只需从聊天回复中复制格式化的 Markdown 卡片并粘贴到企业社媒管理工具中。您也可以让 Gemini 帮您格式化为带有合适标签的 LinkedIn 帖子。</li></ol>"}
+  ]
+});
+MISSIONS.P7.steps.push({
+  nav:{title:"Step 6 · What you built",sub:""},
+  eyebrow:{text:"P7 · 智能体社会影响力顾问",tone:"success"},
+  h2:"Step 6 · What you built",
+  lede:"You built a reusable 智能体社会影响力顾问 Chat Agent with Search & Drive grounding.",
+  fx:"none",
+  restart:true,
+  blocks:[
+    {type:"prose",html:"<p>在 Play 7 中您展示了：</p><ul><li>Designing a custom 智能体社会影响力顾问 Chat Agent grounded in Google Drive briefs and Google Search.</li><li>Evaluating non-profits against age, revenue, reach, and program efficiency metrics.</li><li>Generating mathematically precise Operational Impact Ledgers and anti-greenwashing ESG Accountability Cards.</li><li>Exporting and publishing verified ESG Accountability Cards directly to corporate social media channels.</li></ul>"},
+    {type:"celebrate",title:"Grand Badge Unlocked!",sub:"You completed all 7 Plays of Build With Gemini: Digital Demo Guide!"},
+    {type:"prose",html:"<p>恭喜！您已完成全部 <strong>Build With Gemini · Digital Demo Guide</strong> across all seven executive plays:</p><ul><li><strong>Play 1 · Ice Breaker:</strong> Grounding in live websites and generating branded visual collateral.</li><li><strong>Play 2 · 使用 Google 智能体让您的工作更轻松:</strong> Using Google 1p agents to analyze structured data using Natural language, multistream CCTV video auditing, and Canvas reporting.</li><li><strong>Play 3 · 工作流智能体:</strong> Scheduled supply chain automation with Human-in-the-Loop approval gates and execution tracking in the Runs tab.</li><li><strong>Play 4 · M&amp;A War Room:</strong> Multilingual financial translation, cross-border Risk Matrix tables, Canvas PPTX deck, and Japanese business etiquette ('saving face' / メンツ).</li><li><strong>Play 5 · 危机笔记本:</strong> Multi-modal briefing synthesis, citation verification, and interactive Notebook audio.</li><li><strong>Play 6 · 预测性营收引擎:</strong> Verifiable Python code execution for data cleaning, regression forecasting, and ROI correlation.</li><li><strong>Play 7 · 智能体社会影响力顾问:</strong> Chat Agent design with Google Drive briefs, Google Search verification, and social media posting.</li></ul><p>You have earned the <strong>AI 高管冠军</strong> Grand Badge!</p>"}
+  ]
+});
+
+/* ===== CONTEXTS (Context tab documentation for each Play) ===== */
+var CONTEXTS = {
+  P1:[
+    {id:"ctx0",title:"Play 1 · 破冰 — 背景与架构解析",blocks:[
+      {type:"prose",html:"<p>本“Context”标签页提供了以下 Play 背后的架构、业务价值和最佳实践的深入背景： <strong>Play 1：破冰</strong>.</p>"}
+    ]},
+    {id:"ctx1",title:"为什么实时网站 Grounding 很重要",blocks:[
+      {type:"prose",html:"<p>大语言模型（LLM）存在训练数据截止日期。当您要求未接入实时数据的 LLM 总结您的业务时，它只能依赖历史网页快照或通用假设。通过指示 Gemini Enterprise 使用其 <strong>live web tools</strong>，您可以让模型实时查看您当前的主页、产品目录和品牌信息。</p><h3>高管核心要点</h3><ul><li><strong>零幻觉品牌塑造：</strong> Grounding 确保后续的营销文案和视觉提示词都基于您真实的公司事实。</li><li><strong>快速生成素材：</strong> 无需向代理商提交需求并等待数周，您可以在三分钟内完成从网站 URL 到广告图形的转化。</li></ul>"}
+    ]},
+    {id:"ctx2",title:"Image Generation & Brand Visuals",blocks:[
+      {type:"prose",html:"<p>在步骤 2 和步骤 3 中，您使用了 Gemini 内置的图像生成功能。请注意，提供结构化的描述（例如排版、配色方案和指标网格布局）如何将普通的图像输出转化为极具影响力的企业级信息图。</p>"}
+    ]}
+  ],
+  P2:[
+    {id:"ctx0",title:"Play 2 · 使用 Google 智能体让您的工作更轻松 — 背景解析",blocks:[
+      {type:"prose",html:"<p>本“Context”标签页详细介绍了 <strong>Play 2：使用 Google 智能体让您的工作更轻松</strong> combines structured code (SQL) databases, unstructured video streams, and collaborative document editing.</p>"}
+    ]},
+    {id:"ctx1",title:"The Power of BigQuery Incident Agents",blocks:[
+      {type:"prose",html:"<p>企业数据通常锁定在需要专业 SQL 知识才能查询的 BigQuery 数据仓库中。通过向组织共享 <strong>BQ incident log 智能体</strong>，管理者可以用自然语言提问并立即获得可验证的 SQL 图表。</p>"}
+    ]},
+    {id:"ctx2",title:"Multistream CCTV Video Reasoning",blocks:[
+      {type:"prose",html:"<p>传统视频监控需要人工依次观看数小时录像。Gemini 的多模态上下文窗口允许您同时上传多路视频流（收银台、卸货区、主通道）和 PDF 门店规范手册，并行识别各路视频中的高严重性安全违规行为。</p>"}
+    ]},
+    {id:"ctx3",title:"Canvas & Interactive editing",blocks:[
+      {type:"prose",html:"<p>Canvas 提供了并排协作编辑界面。通过选中特定段落（如“Recommended Corrective Actions”）并使用内联 <strong>Ask Gemini</strong> 提示词，您可以动态重写目标段落而不影响周围文档结构。</p>"}
+    ]}
+  ],
+  P3:[
+    {id:"ctx0",title:"Play 3 · 工作流智能体 — 背景解析",blocks:[
+      {type:"prose",html:"<p>本“Context”标签页探讨了以下内容的架构： <strong>Play 3: 工作流智能体</strong> for automated supply chain workflows, emphasizing Human-in-the-Loop (HITL) governance and execution tracking in the Runs tab.</p>"}
+    ]},
+    {id:"ctx1",title:"Automating Across Drive, Gmail & Calendar",blocks:[
+      {type:"prose",html:"<p>工作流智能体s connect directly to your Google Workspace tools. In this Play, the agent automatically checks inventory spreadsheets in Drive, parses vendor quotation attachments in Gmail, and schedules calendar holds when approved.</p>"}
+    ]},
+    {id:"ctx2",title:"Human-in-the-Loop (HITL) Governance",blocks:[
+      {type:"prose",html:"<p>全自主智能体不应在没有监督的情况下执行不可逆操作（如安排企业采购签核或承诺预算）。通过在步骤 4 配置 <strong>Human-in-the-Loop 关卡</strong>，早上 6:00 的定时工作流会静默汇总报价并在聊天历史中暂停，等待您审阅并点击 <strong>Approve</strong>。</p>"}
+    ]}
+  ],
+  P4:[
+    {id:"ctx0",title:"Play 4 · 全球并购作战室 — 背景解析",blocks:[
+      {type:"prose",html:"<p>本“Context”标签页详细介绍了 <strong>Play 4: The Global Mergers and Acquisitions (M&amp;A) War Room</strong> empowers executives with multilingual financial translation, cross-border compliance auditing, Canvas presentation decks, and cultural negotiation strategy.</p>"}
+    ]},
+    {id:"ctx1",title:"Cross-Border Multilingual Financial Synthesis",blocks:[
+      {type:"prose",html:"<p>跨国并购交易常面临语言障碍与相互冲突的监管要求。注意 Gemini Enterprise 如何静默翻译日文运营披露文件，并实时与美国总部的 CSV 合规底线（ESG 碳中和要求及本地 IT 服务器驻留规则）进行交叉核对。</p>"}
+    ]},
+    {id:"ctx2",title:"Risk Matrix Visualization & Deal-Breakers",blocks:[
+      {type:"prose",html:"<p>通过生成结构化的 Markdown 风险矩阵表，管理者可以立即将翻译后的 Takahashi 立场与美国母公司要求进行对比，评估风险等级（高/中/低），并在动用董事会资金前评估缓解策略。</p>"}
+    ]},
+    {id:"ctx3",title:"Canvas Board PPTX & Cultural Etiquette",blocks:[
+      {type:"prose",html:"<p>在步骤 3 和步骤 4 中，您使用 Canvas 生成可导出的 4 页董事会 PPT 演示文稿。此外，Gemini 还会计算计入每年 100 万美元设施升级罚金后的修正收购价，并提供遵循日本商务礼仪（顾全“面子”）的三步谈判方案。</p>"}
+    ]}
+  ],
+  P5:[
+    {id:"ctx0",title:"Play 5 · 危机笔记本 — 背景解析",blocks:[
+      {type:"prose",html:"<p>本“Context”标签页解释了 <strong>Play 5：使用 Gemini Notebook 管理危机</strong> leverages Gemini Notebook to prepare executives for high-pressure leadership briefings.</p>"}
+    ]},
+    {id:"ctx1",title:"Multi-Modal Briefing Synthesis in Gemini Notebook",blocks:[
+      {type:"prose",html:"<p>在准备高管同步会议时，您常面临碎片化的信息源（区域 PDF 报告、电子表格和语音留言）。Gemini Notebook 充当您的虚拟幕僚长，将这些输入合成为一份统一的 1 页简报。</p>"}
+    ]},
+    {id:"ctx2",title:"Citation Verification & Trust",blocks:[
+      {type:"prose",html:"<p>Gemini Notebook 生成的每项陈述都附带可点击的引用标签，点击即可直接定位到 PDF 精确段落或音频时间戳，让您在走进 COO 会议室前对底层数据充满信心。</p>"}
+    ]},
+    {id:"ctx3",title:"Interactive Audio Overviews",blocks:[
+      {type:"prose",html:"<p>在步骤 4 中，您将体验 Notebook Studio 的交互式音频播客。点击 <strong>Join</strong> 即可通过语音或文字提问，AI 主持人会暂停对话、将您的问题融入讨论并给出分析性回答。</p>"}
+    ]}
+  ],
+  P6:[
+    {id:"ctx0",title:"Play 6 · 预测性营收引擎 — 背景解析",blocks:[
+      {type:"prose",html:"<p>本“Context”标签页详细介绍了 <strong>Play 6: 预测性营收引擎</strong> uses sandboxed Python Code Execution to deliver verifiable data science in chat.</p>"}
+    ]},
+    {id:"ctx1",title:"Why Code Execution Beats Mental Math",blocks:[
+      {type:"prose",html:"<p>标准 LLM 在处理大数字、线性回归公式和复杂数据清洗时容易出错。当您指示 Gemini 扮演数据科学家并使用 <strong>Python Code Execution</strong> 时，模型会编写标准 Python 代码并在安全沙箱中执行，返回精确的数学结果。</p>"}
+    ]},
+    {id:"ctx2",title:"Auditability & Executive Transparency",blocks:[
+      {type:"prose",html:"<p>通过指示智能体在 Markdown 代码块中展示 Python 代码，您的数据科学与审计团队可以审查每项高管建议背后的精确清洗方法、回归参数与相关系数公式。</p>"}
+    ]}
+  ],
+  P7:[
+    {id:"ctx0",title:"Play 7 · 智能体社会影响力顾问 — 背景解析",blocks:[
+      {type:"prose",html:"<p>本“Context”标签页剖析了 <strong>Play 7: 智能体社会影响力顾问</strong> builds reusable Chat Agents with multi-source grounding.</p>"}
+    ]},
+    {id:"ctx1",title:"Combining Internal Briefs with Live Web Search",blocks:[
+      {type:"prose",html:"<p>An effective 智能体社会影响力顾问 must honor internal corporate rules (budget, cause focus, compliance guardrails in Google Drive) while evaluating external real-world charities. By attaching both Drive and Google Search connectors, the agent audits live charity revenue, age, and program efficiency against your internal CSR brief.</p>"}
+    ]},
+    {id:"ctx2",title:"Preventing Greenwashing with ESG Accountability Cards",blocks:[
+      {type:"prose",html:"<p>在步骤 3 中，智能体将预算分配转化为数学精确的运营账本（例如每个俱乐部的精确成本与受助儿童人数），并将社交媒体公告格式化为分条式 ESG 问责卡片以确保透明度。</p>"}
+    ]}
+  ]
+};
+
+/* ---------- Scoreboard axes progression per step ---------- */
+var SCORE_TABLES = {
+  P1:[
+    {security:20, trust:30, budget:40, performance:50, happiness:60, note:"P1 Step 1 · Website grounded in real-time.", cls:""},
+    {security:35, trust:55, budget:60, performance:70, happiness:80, note:"P1 Step 2 · Brand-aligned social ad graphic generated.", cls:""},
+    {security:50, trust:75, budget:80, performance:85, happiness:95, note:"P1 Step 3 · Infographic KPI dashboard visualized.", cls:"win"},
+    {security:60, trust:85, budget:85, performance:90, happiness:100, note:"P1 Cleared · Brand collateral generated at 10x speed.", cls:"win"}
+  ],
+  P2:[
+    {security:70, trust:60, budget:50, performance:65, happiness:70, note:"P2 Step 1 · BigQuery outlier stores identified.", cls:""},
+    {security:80, trust:75, budget:65, performance:75, happiness:80, note:"P2 Step 2 · High-severity CCTV cameras isolated.", cls:""},
+    {security:90, trust:85, budget:80, performance:85, happiness:85, note:"P2 Step 3 · 3 CCTV streams audited against guidelines.", cls:"win"},
+    {security:95, trust:95, budget:90, performance:90, happiness:95, note:"P2 Step 4 · Formal compliance audit report compiled in Canvas.", cls:"win"},
+    {security:100, trust:100, budget:95, performance:95, happiness:100, note:"P2 Cleared · 使用 Google 智能体让您的工作更轻松 complete.", cls:"win"}
+  ],
+  P3:[
+    {security:80, trust:75, budget:85, performance:80, happiness:80, note:"P3 Step 1 · Supply Chain Workflow automation prompt initialized.", cls:""},
+    {security:95, trust:95, budget:90, performance:90, happiness:90, note:"P3 Step 2 · Schedule trigger & HITL approval gate configured.", cls:"win"},
+    {security:98, trust:98, budget:95, performance:95, happiness:95, note:"P3 Step 3 · Supply Chain Agent tested, executed & published.", cls:"win"},
+    {security:100, trust:100, budget:100, performance:100, happiness:100, note:"P3 Cleared · Workflow automation agent complete.", cls:"win"}
+  ],
+  P4:[
+    {security:85, trust:80, budget:75, performance:80, happiness:80, note:"P4 Step 1 · Takahashi Japanese report translated & ESG audited.", cls:""},
+    {security:90, trust:88, budget:80, performance:85, happiness:85, note:"P4 Step 2 · Cross-border Risk Matrix table created.", cls:""},
+    {security:95, trust:92, budget:85, performance:90, happiness:90, note:"P4 Step 3 · Board of Directors 4-slide PPTX deck generated in Canvas.", cls:"win"},
+    {security:98, trust:95, budget:92, performance:95, happiness:95, note:"P4 Step 4 · Plan B financials & Japanese etiquette strategy prepared.", cls:"win"},
+    {security:100, trust:100, budget:95, performance:100, happiness:100, note:"P4 Cleared · 全球并购作战室 complete.", cls:"win"}
+  ],
+  P5:[
+    {security:85, trust:88, budget:80, performance:85, happiness:88, note:"P5 Step 1 · 1-Page COO briefing synthesized from 4 sources.", cls:""},
+    {security:90, trust:92, budget:85, performance:90, happiness:90, note:"P5 Step 2 · Multi-regional logistics compared.", cls:""},
+    {security:95, trust:95, budget:90, performance:95, happiness:95, note:"P5 Step 3 · Financial objections neutralized with data.", cls:"win"},
+    {security:98, trust:98, budget:95, performance:98, happiness:98, note:"P5 Step 4 · Interactive audio overview & studio explored.", cls:"win"},
+    {security:100, trust:100, budget:100, performance:100, happiness:100, note:"P5 Cleared · 危机笔记本 advisory prep complete.", cls:"win"}
+  ],
+  P6:[
+    {security:90, trust:95, budget:85, performance:90, happiness:90, note:"P6 Step 1 · Python script cleaned messy 5-year CSV.", cls:""},
+    {security:95, trust:98, budget:95, performance:95, happiness:95, note:"P6 Step 2 · 6-Month linear regression forecast chart rendered.", cls:"win"},
+    {security:98, trust:100, budget:98, performance:98, happiness:98, note:"P6 Step 3 · Marketing budget ROI correlation proved.", cls:"win"},
+    {security:100, trust:100, budget:100, performance:100, happiness:100, note:"P6 Cleared · 预测性营收引擎 complete.", cls:"win"}
+  ],
+  P7:[
+    {security:85, trust:85, budget:80, performance:85, happiness:85, note:"P7 Step 1 · 智能体社会影响力顾问 created in studio.", cls:""},
+    {security:90, trust:90, budget:85, performance:90, happiness:90, note:"P7 Step 2 · Charities vetted against internal Drive brief.", cls:""},
+    {security:95, trust:95, budget:90, performance:95, happiness:95, note:"P7 Step 3 · ESG Accountability Card & ledger drafted.", cls:"win"},
+    {security:98, trust:98, budget:95, performance:98, happiness:98, note:"P7 Step 4 · Multi-region CSR vetting verified.", cls:"win"},
+    {security:100, trust:100, budget:98, performance:100, happiness:98, note:"P7 Step 5 · Partner outreach finalized.", cls:"win"},
+    {security:100, trust:100, budget:100, performance:100, happiness:100, note:"P7 Cleared · All 7 Plays complete! Grand 徽章已解锁!", cls:"win"}
+  ]
+};
+
+/* ---------- Small helpers ---------- */
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function el(id){ return document.getElementById(id); }
+
+/* ---------- Prompt card (copyable with dynamic placeholder input) ---------- */
+function formatParamMeta(ph){
+  var raw = ph.replace(/^\[/,"").replace(/\]$/,"").trim();
+  var upper = raw.toUpperCase();
+  if (upper.indexOf("WEBSITE") > -1){
+    return { label:"Website URL", placeholder:"e.g. https://www.cymbal.com" };
+  } else if (upper.indexOf("DIFFERENT COUNTRY") > -1){
+    return { label:"Different Country", placeholder:"e.g. Germany, Singapore, Canada" };
+  } else if (upper.indexOf("COUNTRY") > -1){
+    return { label:"Country Name", placeholder:"e.g. Japan, France, Brazil" };
+  } else {
+    var label = raw.replace(/^(?:ENTER|Insert)\s+/i,"").replace(/\s+HERE$/i,"");
+    return { label: label || "Value", placeholder: "e.g. enter your value..." };
+  }
+}
+function promptCardHTML(item){
+  var re = /\[((?:ENTER|Insert)\s+[^\]]+)\]/gi;
+  var match, phList = [];
+  while ((match = re.exec(item.text)) !== null) {
+    var ph = match[0];
+    if (phList.indexOf(ph) === -1) phList.push(ph);
+  }
+  var paramsHTML = "";
+  var textHTML = esc(item.text);
+  if (phList.length > 0){
+    paramsHTML += '<div class="prompt-params-bar">';
+    paramsHTML +=   '<div class="ppb-head">';
+    paramsHTML +=     '<span class="ppb-ic">' + ico("spark") + '</span>';
+    paramsHTML +=     '<span class="ppb-title">自定义提示词参数</span>';
+    paramsHTML +=     '<span class="ppb-sub">您的输入会自动更新下方的提示词</span>';
+    paramsHTML +=   '</div>';
+    paramsHTML +=   '<div class="ppb-fields">';
+    phList.forEach(function(ph){
+      var meta = formatParamMeta(ph);
+      var escapedPh = esc(ph);
+      paramsHTML += '<div class="ppb-field">';
+      paramsHTML +=   '<label class="ppb-label">' + esc(meta.label) + ':</label>';
+      paramsHTML +=   '<input type="text" class="ppb-input" data-target="' + escapedPh + '" placeholder="' + esc(meta.placeholder) + '" autocomplete="off" aria-label="' + esc(meta.label) + '" />';
+      paramsHTML += '</div>';
+      var spanHTML = '<span class="prompt-param" data-ph="' + escapedPh + '">' + escapedPh + '</span>';
+      textHTML = textHTML.split(escapedPh).join(spanHTML);
+    });
+    paramsHTML +=   '</div>';
+    paramsHTML += '</div>';
+  }
+  var metaHTML = '<span class="ag">' + ico("spark") + ' Play 提示词</span> · 复制并粘贴到 Gemini';
+  return '<div class="prompt-card">'
+    + '<div class="prompt-meta">' + metaHTML + '</div>'
+    + paramsHTML
+    + '<div class="prompt-text">' + textHTML + '</div>'
+    + '<button class="copy-btn" type="button" aria-label="Copy prompt to clipboard">'
+    +   '<span class="cp">' + ico("copy") + '</span><span class="ok">' + ico("check") + '</span>'
+    + '</button>'
+    + '</div>';
+}
+
+/* ---------- Per-block renderers ---------- */
+var RENDERERS = {
+  prose: function(b){ return '<div class="prose">' + (b.html||"") + '</div>'; },
+  card: function(b){
+    var h = '<div class="card">';
+    if (b.title) h += '<h3>' + (b.icon?'<span class="ic" aria-hidden="true">' + ico(b.icon) + '</span>':'') + b.title + '</h3>';
+    if (b.sub) h += '<div class="card-sub">' + b.sub + '</div>';
+    if (b.body) h += '<p>' + b.body + '</p>';
+    if (b.children && b.children.length){ b.children.forEach(function(c){ h += blockHTML(c); }); }
+    return h + '</div>';
+  },
+  callout: function(b){
+    var tone = b.tone || "info";
+    var icKey = tone==="warn" ? "warn" : (tone==="good" ? "check" : "info");
+    return '<div class="callout ' + tone + '"><span class="ic" aria-hidden="true">' + ico(icKey) + '</span>'
+      + '<div class="body">' + (b.body||"") + '</div></div>';
+  },
+  promptLead: function(b){
+    return '<div class="prompt-lead' + (b.tone==="warn"?" warn":"") + '">'
+      + '<div class="lead-label">' + ico(b.tone==="warn"?"warn":"spark") + ' ' + esc(b.label||"") + '</div>'
+      + promptCardHTML(b.prompt||{})
+      + '</div>';
+  },
+  prompt: function(b){ return promptCardHTML({ text: b.text }); },
+  table: function(b){
+    var mono = b.mono || [];
+    var head = (b.cols||[]).map(function(c){ return '<th>' + c + '</th>'; }).join("");
+    var body = (b.rows||[]).map(function(r){
+      var tds = (r.cells||[]).map(function(cell, i){
+        return '<td' + (mono.indexOf(i)>-1?' class="mono"':'') + '>' + cell + '</td>';
+      }).join("");
+      return '<tr' + (r.cls?' class="' + r.cls + '"':'') + '>' + tds + '</tr>';
+    }).join("");
+    return '<div class="table-wrap"><div class="table-bar"><span class="ic">' + ico("rows") + '</span>' + (b.bar||"") + '</div>'
+      + '<div class="table-scroll"><table class="log"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+  },
+  celebrate: function(b){
+    return '<div class="card" style="text-align:center;"><div class="celebrate">'
+      + '<div class="burst"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>'
+      + '<span class="core">' + ico("check") + '</span></div>'
+      + '<div class="ctitle">' + esc(b.title||"") + '</div><div class="csub">' + esc(b.sub||"") + '</div></div></div>';
+  }
+};
+
+function blockHTML(b){
+  var fn = RENDERERS[b.type];
+  return fn ? fn(b) : "";
+}
+
+/* ---------- Scoreboard axes ---------- */
+var AXES = [
+  { key:"security",    name:"Security",       icon:"shield" },
+  { key:"trust",       name:"Trust",          icon:"heart" },
+  { key:"budget",      name:"Budget",         icon:"coin" },
+  { key:"performance", name:"Performance",    icon:"bolt" },
+  { key:"happiness",   name:"User Happiness", icon:"smile" }
+];
+
+/* ---------- One section (step) ---------- */
+function sectionHTML(step, idx, total){
+  var tone = step.eyebrow && step.eyebrow.tone === "crisis" ? " crisis"
+           : step.eyebrow && step.eyebrow.tone === "success" ? " success" : "";
+  var h = '<section class="section" data-sec="' + idx + '" aria-label="' + esc(step.nav?step.nav.title:("Step " + idx)) + '">';
+  if (step.playIntro){
+    h += '<div class="play-intro-banner">';
+    if (step.playIntro.title) h += '<div class="play-intro-title">' + esc(step.playIntro.title) + '</div>';
+    if (step.playIntro.howTo) h += '<h2 class="play-intro-howto">' + esc(step.playIntro.howTo) + '</h2>';
+    if (step.playIntro.lede) h += '<p class="play-intro-lede">' + esc(step.playIntro.lede) + '</p>';
+    if (step.playIntro.scenario) h += '<p class="play-intro-scenario"><strong>场景说明：</strong> ' + step.playIntro.scenario + '</p>';
+    h += '</div>';
+  }
+  h += '<div class="sec-head">';
+  if (step.eyebrow && !step.playIntro) h += '<span class="eyebrow' + tone + '">' + esc(step.eyebrow.text||"") + '</span>';
+  h += '<h2>' + (step.h2||"") + '</h2>';
+  if (step.lede) h += '<p class="lede">' + step.lede + '</p>';
+  h += '</div>';
+  (step.blocks||[]).forEach(function(b){ h += blockHTML(b); });
+
+  /* footer */
+  h += '<div class="main-footer">';
+  h += '<button class="btn" type="button" data-back' + ((idx===0 && !prevMissionCode(CURRENT_CODE())) ? ' disabled' : '') + '>' + ico("arrowL") + ' Back</button>';
+  h += '<div class="fspacer"></div>';
+  h += '<span class="footer-count">Step ' + (idx+1) + ' of ' + total + '</span>';
+  if (step.restart){
+    var _nxt = nextMissionCode(CURRENT_CODE());
+    h += '<button class="btn" type="button" data-restart>Restart ' + esc(CURRENT_CODE()) + ' ' + ico("refresh") + '</button>';
+    if (_nxt){
+      var _nm = MISSIONS[_nxt] || {};
+      h += '<button class="btn primary" type="button" data-goto="' + _nxt + '">Next: ' + esc(_nxt + ' · ' + (_nm.name||_nxt)) + ' ' + ico("arrowR") + '</button>';
+    }
+  } else if (idx < total - 1){
+    h += '<button class="btn primary" type="button" data-next>' + esc(step.nextLabel||"Next") + ' ' + ico("arrowR") + '</button>';
+  }
+  h += '</div></section>';
+  return h;
+}
+
+/* current code accessor */
+var _curCode = "P1";
+function CURRENT_CODE(){ return _curCode; }
+function prevMissionCode(code){
+  var order = LAB.missions.map(function(m){ return m.code; });
+  var i = order.indexOf(code);
+  return (i > 0) ? order[i-1] : null;
+}
+function nextMissionCode(code){
+  var order = LAB.missions.map(function(m){ return m.code; });
+  var i = order.indexOf(code);
+  return (i >= 0 && i < order.length - 1) ? order[i+1] : null;
+}
+
+/* ---------- Build main content ---------- */
+function buildMain(mission){
+  var total = mission.steps.length;
+  var html = "";
+  mission.steps.forEach(function(step, i){ html += sectionHTML(step, i, total); });
+  el("main").innerHTML = html;
+}
+
+/* ---------- Build left-nav stepper ---------- */
+function buildNav(mission){
+  var steps = mission.steps, badges = (mission.badges && mission.badges.steps) || {};
+  var html = "";
+  steps.forEach(function(st, i){
+    var badgeIcon = (badges[i] && badges[i].icon) || "medal";
+    html += '<li class="step" data-idx="' + i + '" role="button" tabindex="0" aria-label="' + esc(st.nav?st.nav.title:("Step " + i)) + '">'
+      + '<span class="marker">'
+      +   '<span class="num">' + (i===0?"0":i) + '</span>'
+      +   '<span class="check">' + ico("check") + '</span>'
+      +   '<span class="medal-ic">' + ico(badgeIcon) + '</span>'
+      + '</span>'
+      + '<span class="label"><span class="t">' + esc(st.nav?st.nav.title:("Step " + i)) + '</span>'
+      +   '<span class="s">' + esc(st.nav?st.nav.sub:"") + '</span></span>'
+      + '</li>';
+  });
+  el("steps").innerHTML = html;
+  el("navKicker").textContent = "Play " + mission.code;
+  el("navSub").textContent = mission.sub || "";
+}
+
+/* ---------- Build left trophy shelf ---------- */
+function buildMedals(mission){
+  var badges = (mission.badges && mission.badges.steps) || {};
+  var n = mission.steps.length, html = "";
+  for (var i=0; i<n; i++){
+    var bd = badges[i] || { icon:"medal", name:"Badge " + i };
+    html += '<div class="medallion" data-idx="' + i + '" title="' + esc(bd.name) + '">'
+      + '<span class="shine"></span>'
+      + '<span class="disc">' + ico(bd.icon||"medal") + '</span>'
+      + '<span class="mname">' + esc(bd.name) + '</span></div>';
+  }
+  el("medalGrid").innerHTML = html;
+  el("trophyIcon").innerHTML = ico("trophy");
+}
+
+/* ---------- Build scoreboard axes ---------- */
+function buildAxes(){
+  if (!el("axes")) return;
+  var html = "";
+  AXES.forEach(function(a){
+    html += '<div class="axis ' + a.key + '"><div class="axis-top">'
+      + '<span class="axis-ic">' + ico(a.icon) + '</span>'
+      + '<span class="axis-name">' + a.name + '</span>'
+      + '<span class="axis-val" data-val="' + a.key + '">0</span></div>'
+      + '<div class="axis-track"><div class="axis-fill" data-fill="' + a.key + '"></div></div></div>';
+  });
+  el("axes").innerHTML = html;
+  el("scoreIcon").innerHTML = ico("chart");
+}
+
+/* ---------- Build right-rail lab trophies ---------- */
+function buildLab(mission){
+  el("labIcon").innerHTML = ico("trophy");
+  var mod = (mission.badges && mission.badges.module) || { icon:"trophy", name:mission.name, cheer:"" };
+  el("moduleTrophy").innerHTML = '<div class="mt-disc">' + ico(mod.icon||"trophy") + '</div>'
+    + '<div class="mt-meta"><div class="mt-name">' + esc(mod.name) + '</div>'
+    + '<div class="mt-sub" data-modsub>' + (state.moduleEarned[mission.code] ? "Cleared" : "进行中") + '</div></div>';
+  var shelf = LAB.missions.map(function(m){
+    var cls = state.moduleEarned[m.code] ? "earned" : "unlockable";
+    return '<div class="lab-tile ' + cls + '" data-mcode="' + m.code + '">'
+      + '<span class="lt-disc">' + ico(m.icon) + '</span>'
+      + '<span class="lt-code">' + m.code + '</span></div>';
+  }).join("");
+  el("labShelf").innerHTML = shelf;
+  var all = LAB.missions.every(function(m){ return state.moduleEarned[m.code]; });
+  el("grandBadge").className = "grand-badge" + (all ? " earned" : "");
+  el("grandBadge").innerHTML = '<div class="gb-disc">' + ico(LAB.grand.icon) + '</div>'
+    + '<div><div class="gb-name">' + esc(LAB.grand.name) + ' <span class="lk"' + (all?' style="display:none;"':'') + '>' + ico("lock") + '</span></div>'
+    + '<div class="gb-blurb">' + esc(LAB.grand.blurb) + '</div></div>';
+}
+
+/* ---------- Build mission switcher tabs ---------- */
+function buildSwitcher(){
+  var html = "";
+  LAB.missions.forEach(function(m){
+    html += '<button class="mtab" type="button" role="tab" data-mcode="' + m.code + '" title="' + esc(m.code + ' · ' + m.name) + '">'
+      + '<span class="mt-ic">' + ico(m.icon) + '</span>' + m.code
+      + '</button>';
+  });
+  el("switcher").innerHTML = html;
+}
+
+/* ---------- Apply per-mission accent ---------- */
+function applyAccent(mission){
+  var a = ACCENTS[mission.code] || ACCENTS.P1;
+  var root = document.documentElement.style;
+  root.setProperty("--accent", a.main);
+  root.setProperty("--accent-ink", a.ink);
+  root.setProperty("--accent-050", a.soft);
+  root.setProperty("--accent-border", a.border);
+}
+
+/* ---------- Build Context tab content ---------- */
+function buildContext(code){
+  var c = CONTEXTS[code] || [];
+  var html = '<div class="ctx-note"><span class="ic" aria-hidden="true">' + ico("bulb") + '</span><span>Deep background, architecture, and executive takeaways for Play ' + esc(code) + '.</span></div>';
+  c.forEach(function(sec){
+    html += '<section class="section is-active" style="margin-bottom:18px;">';
+    html += '<div class="sec-head"><h2>' + esc(sec.title||"") + '</h2></div>';
+    (sec.blocks||[]).forEach(function(b){ html += blockHTML(b); });
+    html += '</section>';
+  });
+  el("ctxMain").innerHTML = html;
+}
+
+/* ================= SHELL ================= */
+var REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+if (REDUCE) document.body.classList.add("no-motion");
+
+var state = { code: LAB.missions[0].code, step:0, earned:{}, moduleEarned:{} };
+LAB.missions.forEach(function(m){ state.earned[m.code]={}; state.moduleEarned[m.code]=false; });
+
+var sections = [], stepEls = [];
+var valEls = {}, fillEls = {}, displayed = {};
+
+function getVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function colorFor(v){ if (v>=75) return getVar("--green"); if (v>=50) return getVar("--yellow"); return getVar("--red"); }
+
+/* ---------- Mount a play ---------- */
+function mount(code){
+  var mission = MISSIONS[code];
+  if (!mission) return;
+  state.code = code; _curCode = code;
+  applyAccent(mission);
+
+  buildMain(mission);
+  buildNav(mission);
+  buildMedals(mission);
+  buildAxes();
+  buildLab(mission);
+  buildSwitcher();
+
+  el("missionChip").innerHTML = '<span class="dot"></span> ' + esc(mission.code + " · " + mission.name);
+  Array.prototype.forEach.call(document.querySelectorAll(".mtab"), function(t){
+    var on = t.getAttribute("data-mcode")===code;
+    t.classList.toggle("active", on);
+    if (on) t.setAttribute("aria-selected","true"); else t.removeAttribute("aria-selected");
+  });
+
+  sections = Array.prototype.slice.call(document.querySelectorAll(".section"));
+  stepEls = Array.prototype.slice.call(document.querySelectorAll("#steps .step"));
+  AXES.forEach(function(a){ valEls[a.key]=document.querySelector('[data-val="' + a.key + '"]'); fillEls[a.key]=document.querySelector('[data-fill="' + a.key + '"]'); displayed[a.key]=0; });
+
+  refreshMedals();
+  if (state.moduleEarned[code]) markModuleEarned(code, true);
+
+  buildContext(code);
+  if (el("main")) el("main").hidden = false;
+  if (el("ctxMain")) el("ctxMain").hidden = true;
+  var _ti = el("vtabInstructions"), _tc = el("vtabContext");
+  if (_ti){ _ti.classList.add("active"); _ti.setAttribute("aria-selected","true"); }
+  if (_tc){ _tc.classList.remove("active"); _tc.setAttribute("aria-selected","false"); }
+  var _pw = document.querySelector(".progress-wrap"); if (_pw) _pw.style.display = "";
+  if (el("vtabIcoI")) el("vtabIcoI").innerHTML = ico("rows");
+  if (el("vtabIcoC")) el("vtabIcoC").innerHTML = ico("bulb");
+
+  state.step = -1;
+  go(state._nextInitStep || 0);
+  delete state._nextInitStep;
+}
+
+/* ---------- Smooth scroll ---------- */
+var _scrollAnim = null;
+function smoothScrollTo(y){
+  var max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  y = Math.max(0, Math.min(Math.round(y), max));
+  if (_scrollAnim){ cancelAnimationFrame(_scrollAnim); _scrollAnim = null; }
+  var start = window.pageYOffset, delta = y - start;
+  if (REDUCE || Math.abs(delta) < 2 || typeof requestAnimationFrame !== "function"){
+    window.scrollTo(0, y); return;
+  }
+  var dur = Math.min(620, Math.max(260, Math.abs(delta) * 0.32)), t0 = null;
+  function frame(ts){
+    if (t0 === null) t0 = ts;
+    var p = Math.min(1, (ts - t0) / dur);
+    var e = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2;
+    window.scrollTo(0, Math.round(start + delta * e));
+    _scrollAnim = p < 1 ? requestAnimationFrame(frame) : null;
+  }
+  _scrollAnim = requestAnimationFrame(frame);
+}
+
+function go(idx){
+  var mission = MISSIONS[state.code];
+  var total = mission.steps.length;
+  idx = parseInt(idx,10);
+  if (!isFinite(idx) || idx<0 || idx>=total) return;
+  var prev = state.step;
+  state.step = idx;
+
+  sections.forEach(function(sec){ sec.classList.toggle("is-active", parseInt(sec.getAttribute("data-sec"),10)===idx); });
+  stepEls.forEach(function(li, i){
+    li.classList.toggle("active", i===idx);
+    li.classList.toggle("done", i<idx);
+    if (i===idx) li.setAttribute("aria-current","step"); else li.removeAttribute("aria-current");
+  });
+
+  var pct = total>1 ? Math.round((idx/(total-1))*100) : 100;
+  el("progressFill").style.width = pct + "%";
+  el("progressPct").textContent = pct + "%";
+
+  updateScoreboard(idx);
+  awardBadges(idx, prev);
+  smoothScrollTo(0);
+}
+
+/* ---------- Scoreboard animation ---------- */
+var rafHandles = {};
+function animateAxis(a, target){
+  if (!fillEls[a] || !valEls[a]) return;
+  var start = displayed[a], startT=null, dur=800;
+  if (rafHandles[a]) cancelAnimationFrame(rafHandles[a]);
+  fillEls[a].style.width = target + "%";
+  fillEls[a].style.background = colorFor(target);
+  if (REDUCE){ valEls[a].textContent = target; displayed[a]=target; return; }
+  function frame(ts){
+    if (startT===null) startT=ts;
+    var p = Math.min(1,(ts-startT)/dur), eased = 1-Math.pow(1-p,3);
+    valEls[a].textContent = Math.round(start+(target-start)*eased);
+    if (p<1) rafHandles[a]=requestAnimationFrame(frame); else displayed[a]=target;
+  }
+  rafHandles[a]=requestAnimationFrame(frame);
+}
+
+function updateScoreboard(idx){
+  var table = SCORE_TABLES[state.code] || [];
+  var sc = table[idx] || { security:50, trust:50, budget:50, performance:50, happiness:50, note:"", cls:"" };
+  AXES.forEach(function(a){
+    animateAxis(a.key, sc[a.key]);
+  });
+  var ss = el("scoreStatus");
+  if (ss){
+    ss.textContent = sc.note || "";
+    ss.className = "score-status" + (sc.cls?(" " + sc.cls):"");
+  }
+}
+
+/* ---------- Badges ---------- */
+function awardBadges(idx, prev){
+  var mission = MISSIONS[state.code];
+  var set = state.earned[state.code];
+  var newlyThis = !set[idx];
+  for (var j=0; j<=idx; j++){ set[j]=true; }
+
+  var moduleJustEarned = false;
+  if (idx === mission.steps.length - 1 && !state.moduleEarned[state.code]){
+    state.moduleEarned[state.code]=true; moduleJustEarned=true; markModuleEarned(state.code);
+  }
+  refreshMedals();
+
+  var badges = (mission.badges && mission.badges.steps) || {};
+  if (moduleJustEarned){ showBadge(mission.badges.module, true); }
+  else if (newlyThis && badges[idx]){ showBadge(badges[idx], false); }
+}
+
+function refreshMedals(){
+  var set = state.earned[state.code];
+  Array.prototype.forEach.call(document.querySelectorAll("#medalGrid .medallion"), function(m){
+    var i = parseInt(m.getAttribute("data-idx"),10);
+    if (set[i] && !m.classList.contains("earned")){
+      m.classList.add("earned");
+      if(!REDUCE){ m.classList.remove("pop"); void m.offsetWidth; m.classList.add("pop"); }
+    }
+  });
+  stepEls.forEach(function(li,i){ li.classList.toggle("earned", !!set[i]); });
+  updateBadgeCount();
+}
+
+function updateBadgeCount(){
+  var mission = MISSIONS[state.code];
+  var total = mission.steps.length, set=state.earned[state.code]||{}, n=0;
+  for (var k in set){ if (set[k]) n++; }
+  el("badgeCount").textContent = "Badges " + n + " / " + total;
+}
+
+function markModuleEarned(code){
+  var mt = el("moduleTrophy");
+  if (mt){ mt.classList.add("earned"); var sub=mt.querySelector("[data-modsub]"); if(sub) sub.textContent = "Cleared"; }
+  var tile = document.querySelector('.lab-tile[data-mcode="' + code + '"]');
+  if (tile){ tile.classList.remove("unlockable"); tile.classList.add("earned"); }
+  var all = LAB.missions.every(function(m){ return state.moduleEarned[m.code]; });
+  var gb = el("grandBadge");
+  if (gb){
+    gb.classList.toggle("earned", all);
+    var lk=gb.querySelector(".lk"); if(lk) lk.style.display = all?"none":"";
+  }
+}
+
+/* ---------- Badge-unlock popup ---------- */
+var badgeTimer=null;
+function showBadge(badge, isModule){
+  if (!badge) return;
+  var pop = el("badgePop");
+  pop.className = "badge-pop" + (isModule?" module":"");
+  pop.innerHTML = '<div class="bp-disc">' + ico(badge.icon||"medal") + '</div>'
+    + '<div class="bp-meta"><div class="bp-kick">' + ico(isModule?"trophy":"medal") + ' ' + (isModule?"Play cleared!":"徽章已解锁") + '</div>'
+    + '<div class="bp-name">' + esc(badge.name||"") + '</div>'
+    + '<div class="bp-cheer">' + esc(badge.cheer||"") + '</div></div>';
+  void pop.offsetWidth;
+  pop.classList.add("show");
+  if (badgeTimer) clearTimeout(badgeTimer);
+  badgeTimer = setTimeout(function(){ pop.classList.remove("show"); }, isModule?3200:2500);
+}
+
+/* ---------- Copy to clipboard ---------- */
+var toast=el("toast"), toastText=el("toastText"), toastTimer=null;
+toast.querySelector(".tic").innerHTML = ico("check");
+function showToast(msg){ toastText.textContent = msg||"已复制到剪贴板"; toast.classList.add("show"); if (toastTimer) clearTimeout(toastTimer); toastTimer=setTimeout(function(){ toast.classList.remove("show"); },1900); }
+function fallbackCopy(text){
+  var ta=document.createElement("textarea");
+  ta.value=text; ta.setAttribute("readonly",""); ta.style.position="absolute"; ta.style.left="-9999px";
+  document.body.appendChild(ta); ta.select();
+  var ok=false; try{ ok=document.execCommand("copy"); }catch(e){ ok=false; }
+  document.body.removeChild(ta); return ok;
+}
+function copyText(text){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text).then(function(){return true;}, function(){return fallbackCopy(text);});
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+
+/* ---------- Switch play ---------- */
+function switchMission(code){ if (!MISSIONS[code]) return; state.step=0; mount(code, 0); }
+function switchMissionToStep(code, stepIdx){
+  if (!MISSIONS[code]) return;
+  state._nextInitStep = stepIdx || 0;
+  mount(code);
+}
+function goBack(){
+  if (state.step > 0){
+    go(state.step - 1);
+  } else {
+    var _prv = prevMissionCode(state.code);
+    if (_prv && MISSIONS[_prv]){
+      switchMissionToStep(_prv, MISSIONS[_prv].steps.length - 1);
+    }
+  }
+}
+
+/* ---------- Interactive prompt parameter input ---------- */
+document.addEventListener("input", function(e){
+  if (e.target && e.target.classList && e.target.classList.contains("ppb-input")){
+    var card = e.target.closest(".prompt-card");
+    if (!card) return;
+    var targetPh = e.target.getAttribute("data-target");
+    var val = e.target.value.trim();
+    var spans = card.querySelectorAll(".prompt-param");
+    Array.prototype.forEach.call(spans, function(s){
+      if (s.getAttribute("data-ph") === targetPh){
+        if (val){
+          s.textContent = val;
+          s.classList.add("filled");
+        } else {
+          s.textContent = targetPh;
+          s.classList.remove("filled");
+        }
+      }
+    });
+  }
+});
+
+/* ---------- Event delegation ---------- */
+document.addEventListener("click", function(e){
+  var t = e.target;
+  var copyBtn = t.closest(".copy-btn");
+  if (copyBtn){
+    var card=copyBtn.closest(".prompt-card");
+    var txtEl=card&&card.querySelector(".prompt-text");
+    var txt=txtEl?txtEl.textContent.trim():"";
+    copyText(txt).then(function(ok){
+      showToast(ok?"Copied — paste into Gemini Enterprise":"Copy failed — select the text manually");
+      if(ok){
+        copyBtn.classList.add("copied");
+        setTimeout(function(){ copyBtn.classList.remove("copied"); },1400);
+      }
+    });
+    return;
+  }
+  var stepLi = t.closest("#steps .step[data-idx]"); if (stepLi){ go(parseInt(stepLi.getAttribute("data-idx"),10)); return; }
+  var mtab = t.closest(".mtab"); if (mtab){ switchMission(mtab.getAttribute("data-mcode")); return; }
+  var tile = t.closest(".lab-tile"); if (tile){ var c=tile.getAttribute("data-mcode"); if (MISSIONS[c]) switchMission(c); return; }
+  if (t.closest("[data-next]")){ go(state.step+1); return; }
+  if (t.closest("[data-back]")){ goBack(); return; }
+  if (t.closest("[data-restart]")){ mount(state.code); return; }
+  var goto = t.closest("[data-goto]"); if (goto){ switchMission(goto.getAttribute("data-goto")); return; }
+  var vtab = t.closest(".vtab[data-view]");
+  if (vtab){
+    var view = vtab.getAttribute("data-view");
+    var allTabs = document.querySelectorAll(".vtab");
+    Array.prototype.forEach.call(allTabs, function(tab){
+      var isAct = tab.getAttribute("data-view") === view;
+      tab.classList.toggle("active", isAct);
+      tab.setAttribute("aria-selected", isAct ? "true" : "false");
+    });
+    var mEl = el("main"), ctxEl = el("ctxMain");
+    if (view === "instructions"){
+      if (mEl) mEl.hidden = false;
+      if (ctxEl) ctxEl.hidden = true;
+    } else {
+      if (mEl) mEl.hidden = true;
+      if (ctxEl) ctxEl.hidden = false;
+    }
+    return;
+  }
+});
+
+document.addEventListener("keydown", function(e){
+  var tag = (e.target && e.target.tagName) || "";
+  if (tag==="INPUT" || tag==="TEXTAREA") return;
+  var kStepLi = e.target && e.target.closest && e.target.closest("#steps .step[data-idx]");
+  if (kStepLi && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); go(parseInt(kStepLi.getAttribute("data-idx"),10)); return; }
+  if (e.key==="ArrowRight"){ go(state.step+1); }
+  else if (e.key==="ArrowLeft"){ goBack(); }
+});
+
+/* ---------- Initialize on load ---------- */
+mount(LAB.missions[0].code);
+</script>
+
+
+</body></html>
